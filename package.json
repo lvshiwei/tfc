@@ -1,0 +1,35 @@
+{
+  "name": "tfc",
+  "version": "1.0.0",
+  "description": "build a nice form",
+  "main": "index.js",
+  "scripts": {
+    "dev": "rollup -c -w",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "bin": {
+    "tfc": "./dist/index.js"
+  },
+  "keywords": [
+    "form",
+    "build"
+  ],
+  "author": "lvshiwei",
+  "license": "ISC",
+  "dependencies": {
+    "@babel/generator": "^7.9.5",
+    "@babel/traverse": "^7.9.5",
+    "@babel/types": "^7.9.5",
+    "babylon": "^6.18.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.9.0",
+    "@babel/parser": "^7.9.4",
+    "@babel/preset-env": "^7.9.0",
+    "@rollup/plugin-commonjs": "^11.0.2",
+    "@rollup/plugin-json": "^4.0.2",
+    "@rollup/plugin-node-resolve": "^7.1.1",
+    "rollup": "^2.2.0",
+    "rollup-plugin-babel": "^4.4.0"
+  }
+}
