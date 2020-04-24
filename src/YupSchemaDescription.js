@@ -3,8 +3,8 @@
  * @author shiwei.lv
  */
 
-import { isNotEmptyArray, isNullOrUndefined } from "./lib/asserts";
-import { YUP_TYPE_LIST } from "./constants";
+import { isNotEmptyArray, isNullOrUndefined } from './lib/asserts';
+import { YUP_TYPE_LIST } from './constants';
 
 export class YupSchemaDescription {
   constructor() {
