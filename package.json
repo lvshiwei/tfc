@@ -20,7 +20,8 @@
     "@babel/generator": "^7.9.5",
     "@babel/traverse": "^7.9.5",
     "@babel/types": "^7.9.5",
-    "babylon": "^6.18.0"
+    "babylon": "^6.18.0",
+    "gulp": "^4.0.2"
   },
   "devDependencies": {
     "@babel/core": "^7.9.0",
