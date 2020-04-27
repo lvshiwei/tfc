@@ -1,7 +1,7 @@
-import * as t from "@babel/types";
-import generate from "@babel/generator";
-import { parse } from "@babel/parser";
-import { LabelDescriptor } from "./TypeDescriptor";
+import * as t from '@babel/types';
+import generate from '@babel/generator';
+import { parse } from '@babel/parser';
+import { LabelDescriptor } from './TypeDescriptor';
 
 export default function (schema) {
   const code = `
@@ -27,9 +27,9 @@ export default function (schema) {
         .then(() => alert("Amazing!!"))
         .catch(console.error);
   
-    const handleInputChange = (name) => (value) => setModel(name, value);
+    const handleChangeInput = (name) => (value) => setModel(name, value);
     const handleLeaveInput = (name) => () => validate(name, model[name]);
-    const handleSelectChange = (name) => (value) => {
+    const handleChangeSelect = (name) => (value) => {
       setModel(name, value);
       validate(name, value);
     };
@@ -41,35 +41,45 @@ export default function (schema) {
 
     const Required = () => <i className="required">*</i>;
   }`;
-  const ast = parse(code, { sourceType: "module", plugins: ["jsx"] });
+  const ast = parse(code, { sourceType: 'module', plugins: ['jsx'] });
   const exportDefault = ast.program.body.find(t.isExportDefaultDeclaration);
 
-  const newline = t.jsxText("\n");
-  const div = t.jsxIdentifier("div");
+  const newline = t.jsxText('\n');
+  const div = t.jsxIdentifier('div');
   const divOpen = t.jsxOpeningElement(div, []);
   const divClose = t.jsxClosingElement(div);
-  const list = t.jsxIdentifier("List");
+  const list = t.jsxIdentifier('List');
   const listComp = t.jsxElement(
     t.jsxOpeningElement(list, []),
     t.jsxClosingElement(list),
-    [newline]
+    [newline],
   );
   for (const key in schema) {
-    const item = t.jsxIdentifier("InputItem");
+    const item = t.jsxIdentifier('InputItem');
     const itemComp = t.jsxElement(
       t.jsxOpeningElement(item, [
-        t.jsxAttribute(t.jsxIdentifier("name"), t.stringLiteral(key)),
+        t.jsxAttribute(t.jsxIdentifier('name'), t.stringLiteral(key)),
+
         t.jsxAttribute(
-          t.jsxIdentifier("onChange"),
+          t.jsxIdentifier('className'),
           t.jsxExpressionContainer(
-            t.callExpression(t.identifier("handleChangeInput"), [
+            t.callExpression(t.identifier('renderClassName'), [
               t.stringLiteral(key),
-            ])
-          )
+            ]),
+          ),
+        ),
+
+        t.jsxAttribute(
+          t.jsxIdentifier('onChange'),
+          t.jsxExpressionContainer(
+            t.callExpression(t.identifier('handleChangeInput'), [
+              t.stringLiteral(key),
+            ]),
+          ),
         ),
       ]),
       t.jsxClosingElement(item),
-      []
+      [],
     );
     const rules = schema[key];
     const labelDesc = schema[key].find((i) => i instanceof LabelDescriptor);
@@ -77,27 +87,28 @@ export default function (schema) {
       itemComp.children.push(t.jsxText(labelDesc.value));
     }
     const typeDesc = rules.slice(-1)[0];
-    if (["string", "number"].includes(typeDesc.name)) {
+    if (['string', 'number'].includes(typeDesc.name)) {
       itemComp.openingElement.attributes.push(
         t.jsxAttribute(
-          t.jsxIdentifier("onBlur"),
+          t.jsxIdentifier('onBlur'),
           t.jsxExpressionContainer(
-            t.callExpression(t.identifier("handleLeaveInput"), [
+            t.callExpression(t.identifier('handleLeaveInput'), [
               t.stringLiteral(key),
-            ])
-          )
-        )
+            ]),
+          ),
+        ),
       );
     }
-    const isRequired = rules.some((r) => r.name === "required");
+
+    const isRequired = rules.some((r) => r.name === 'required');
     if (isRequired) {
       itemComp.children.push(
         t.jsxElement(
-          t.jsxOpeningElement(t.jsxIdentifier("Required"), [], true),
+          t.jsxOpeningElement(t.jsxIdentifier('Required'), [], true),
           null,
           [],
-          true
-        )
+          true,
+        ),
       );
     }
 

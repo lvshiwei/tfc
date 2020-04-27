@@ -1,14 +1,10 @@
-import * as t from "@babel/types";
-import generate from "@babel/generator";
-import { parse } from "@babel/parser";
-import { YUP_TYPE_LIST, SUGAR_VARIABLES } from "./constants";
-import { isNotEmptyArray } from "./lib/asserts";
-import { JsonMockDescription } from "./JsonMockDescription";
-import prepareGenerateYupSchema from "./prepareGenerateYupSchema";
-/**
- * 检查指令是否支持
- */
-const isSupported = (d) => YUP_TYPE_LIST.includes(d);
+import * as t from '@babel/types';
+import generate from '@babel/generator';
+import { parse } from '@babel/parser';
+import { YUP_TYPE_LIST } from './constants';
+import { isNotEmptyArray } from './lib/asserts';
+import { JsonMockDescription } from './JsonMockDescription';
+import prepareGenerateYupSchema from './prepareGenerateYupSchema';
 
 /**
  * 生成 Yup 验证架构脚本
@@ -17,7 +13,7 @@ const isSupported = (d) => YUP_TYPE_LIST.includes(d);
 export default function (description) {
   return new Promise((resolve, reject) => {
     if (!(description instanceof JsonMockDescription)) {
-      console.error("不能生成yup验证规则, 收到的参数不符合预期!");
+      console.error('不能生成yup验证规则, 收到的参数不符合预期!');
       reject();
       return;
     }
@@ -31,7 +27,7 @@ export default function (description) {
   export default object();
   `;
 
-    const ast = parse(code, { sourceType: "module" });
+    const ast = parse(code, { sourceType: 'module' });
     const objectDeclare = ast.program.body[1].declaration;
 
     const objectProperties = [];
@@ -41,7 +37,7 @@ export default function (description) {
     for (const property of description.properties) {
       const rules = buildRulesChain(property);
       objectProperties.push(
-        t.objectProperty(t.identifier(property.key), rules)
+        t.objectProperty(t.identifier(property.key), rules),
       );
     }
     objectDeclare.arguments.push(t.objectExpression(objectProperties));
@@ -61,7 +57,7 @@ export function buildRulesChain(property) {
     return makeRuleExpression(property.annotations, 0);
   }
 
-  console.warn("无法构建规则, property 参数是空的!");
+  console.warn('无法构建规则, property 参数是空的!');
 }
 
 function makeRuleExpression(annotations, index) {
@@ -75,9 +71,9 @@ function makeRuleExpression(annotations, index) {
   return t.callExpression(
     t.memberExpression(
       makeRuleExpression(annotations, index + 1),
-      t.identifier(ann.method)
+      t.identifier(ann.method),
     ),
-    makeRuleArguments(annotations[index])
+    makeRuleArguments(annotations[index]),
   );
 }
 /**
@@ -87,11 +83,11 @@ function makeRuleArguments(annotation) {
   function cast(value) {
     const type = typeof value;
     switch (type) {
-      case "string":
+      case 'string':
         return t.stringLiteral(value);
-      case "number":
+      case 'number':
         return t.numericLiteral(value);
-      case "boolean":
+      case 'boolean':
         return t.booleanLiteral(value);
       default:
         return t.stringLiteral(value);

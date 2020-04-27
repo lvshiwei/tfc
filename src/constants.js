@@ -1,13 +1,18 @@
+export const YUP_TYPE_STRING = 'string';
+export const YUP_TYPE_Number = 'number';
+export const YUP_TYPE_BOOL = 'bool';
+export const YUP_TYPE_DATE = 'date';
+export const YUP_TYPE_ARRAY = 'array';
+export const YUP_TYPE_MIXED = 'mixed';
+export const YUP_KEYWORD_REQUIRED = 'required';
 /**
  * YUP合法的指令集
  */
 export const YUP_TYPE_LIST = [
-  "string",
-  "number",
-  "bool",
-  "date",
-  "mixed",
-  "array",
+  YUP_TYPE_MIXED,
+  YUP_TYPE_STRING,
+  YUP_TYPE_Number,
+  YUP_TYPE_DATE,
+  YUP_TYPE_ARRAY,
+  YUP_TYPE_BOOL,
 ];
-
-export const SUGAR_VARIABLES = { ["$TODAY"]: new Date() };

@@ -19,11 +19,11 @@ export default function () {
 
   const handleSubmit = () => validate(model).then(() => alert("Amazing!!")).catch(console.error);
 
-  const handleInputChange = name => value => setModel(name, value);
+  const handleChangeInput = name => value => setModel(name, value);
 
   const handleLeaveInput = name => () => validate(name, model[name]);
 
-  const handleSelectChange = name => value => {
+  const handleChangeSelect = name => value => {
     setModel(name, value);
     validate(name, value);
   };
@@ -37,14 +37,14 @@ export default function () {
 
   return <div>
     <List>
-      <InputItem name="expandProjectNo" onChange={handleChangeInput("expandProjectNo")} onBlur={handleLeaveInput("expandProjectNo")}>expandProjectNo</InputItem>
-      <InputItem name="shopLocation" onChange={handleChangeInput("shopLocation")} onBlur={handleLeaveInput("shopLocation")}>门店地址</InputItem>
-      <InputItem name="preLongitude" onChange={handleChangeInput("preLongitude")} onBlur={handleLeaveInput("preLongitude")}>经度</InputItem>
-      <InputItem name="preLatitude" onChange={handleChangeInput("preLatitude")} onBlur={handleLeaveInput("preLatitude")}>纬度</InputItem>
-      <InputItem name="preOpeningTime" onChange={handleChangeInput("preOpeningTime")}>预开业时间<Required /></InputItem>
-      <InputItem name="isSupportCanteen" onChange={handleChangeInput("isSupportCanteen")} onBlur={handleLeaveInput("isSupportCanteen")}>支持堂食<Required /></InputItem>
-      <InputItem name="seatsNumber" onChange={handleChangeInput("seatsNumber")} onBlur={handleLeaveInput("seatsNumber")}>座位数<Required /></InputItem>
-      <InputItem name="active" onChange={handleChangeInput("active")}>生效的<Required /></InputItem>
+      <InputItem name="expandProjectNo" className={renderClassName("expandProjectNo")} onChange={handleChangeInput("expandProjectNo")} onBlur={handleLeaveInput("expandProjectNo")}>expandProjectNo</InputItem>
+      <InputItem name="shopLocation" className={renderClassName("shopLocation")} onChange={handleChangeInput("shopLocation")} onBlur={handleLeaveInput("shopLocation")}>门店地址</InputItem>
+      <InputItem name="preLongitude" className={renderClassName("preLongitude")} onChange={handleChangeInput("preLongitude")} onBlur={handleLeaveInput("preLongitude")}>经度</InputItem>
+      <InputItem name="preLatitude" className={renderClassName("preLatitude")} onChange={handleChangeInput("preLatitude")} onBlur={handleLeaveInput("preLatitude")}>纬度</InputItem>
+      <InputItem name="preOpeningTime" className={renderClassName("preOpeningTime")} onChange={handleChangeInput("preOpeningTime")}>预开业时间<Required /></InputItem>
+      <InputItem name="isSupportCanteen" className={renderClassName("isSupportCanteen")} onChange={handleChangeInput("isSupportCanteen")} onBlur={handleLeaveInput("isSupportCanteen")}>支持堂食<Required /></InputItem>
+      <InputItem name="seatsNumber" className={renderClassName("seatsNumber")} onChange={handleChangeInput("seatsNumber")} onBlur={handleLeaveInput("seatsNumber")}>座位数<Required /></InputItem>
+      <InputItem name="active" className={renderClassName("active")} onChange={handleChangeInput("active")}>生效的<Required /></InputItem>
     </List>
   </div>;
 }

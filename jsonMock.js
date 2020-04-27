@@ -1,15 +1,15 @@
 export default {
   //编号
-  expandProjectNo: "TM20391929",
+  expandProjectNo: 'TM20391929',
   // 门店地址
   // @max 30
-  shopLocation: "厦门市湖里区",
+  shopLocation: '厦门市湖里区',
   // 经度
   preLongitude: 109.203993,
   // 纬度
   // @number 请填写正确的纬度
   // @min 0
-  // @max 1,不能太大
+  // @max 19999,不能太大
   preLatitude: 25.03949,
   // 预开业时间
   // @date
