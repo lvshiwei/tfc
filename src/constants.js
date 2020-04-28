@@ -5,6 +5,7 @@ export const YUP_TYPE_DATE = 'date';
 export const YUP_TYPE_ARRAY = 'array';
 export const YUP_TYPE_MIXED = 'mixed';
 export const YUP_KEYWORD_REQUIRED = 'required';
+export const YUP_KEYWORD_LABEL = 'label';
 /**
  * YUP合法的指令集
  */

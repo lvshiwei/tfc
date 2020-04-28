@@ -544,6 +544,7 @@ var YUP_TYPE_DATE = 'date';
 var YUP_TYPE_ARRAY = 'array';
 var YUP_TYPE_MIXED = 'mixed';
 var YUP_KEYWORD_REQUIRED = 'required';
+var YUP_KEYWORD_LABEL = 'label';
 /**
  * YUP合法的指令集
  */
@@ -858,44 +859,79 @@ var YupSchemaRuleDescriptor = /*#__PURE__*/function () {
 
     this.name = name;
     this.attributes = attributes;
-    this._type = null;
+    this._label = null;
+    this._dataType = null;
+    this._isRequired = null;
   }
 
   _createClass(YupSchemaRuleDescriptor, [{
     key: "isRequired",
     value: function isRequired() {
+      if (!isNullOrUndefined(this._isRequired)) {
+        return this._isRequired;
+      }
+
+      return this.hasAttribute(YUP_KEYWORD_REQUIRED);
+    }
+  }, {
+    key: "hasAttribute",
+    value: function hasAttribute(name) {
       return this.attributes.some(function (_ref) {
         var key = _ref.key;
-        return key === YUP_KEYWORD_REQUIRED;
+        return key === name;
       });
     }
   }, {
-    key: "type",
+    key: "getAttribute",
+    value: function getAttribute(key) {
+      return this.attributes.find(function (attr) {
+        return attr.key === key;
+      });
+    }
+  }, {
+    key: "label",
     get: function get() {
-      if (isNullOrUndefined(this._type)) {
-        return this._type;
+      if (!isNullOrUndefined(this._label)) {
+        return this._label;
       }
 
-      var found = this.attributes.find(function (_ref2) {
-        var key = _ref2.key;
-        return YUP_TYPE_LIST.includes(key);
+      var found = this.attributes.find(function (attr) {
+        return attr.key === YUP_KEYWORD_LABEL;
       });
 
       if (!isNullOrUndefined(found)) {
-        this._type = found.key;
+        this._label = found.values[0];
+        return this._label;
+      }
+    }
+  }, {
+    key: "dataType",
+    get: function get() {
+      if (!isNullOrUndefined(this._dataType)) {
+        return this._dataType;
+      }
+
+      var found = this.attributes.find(function (attr) {
+        return attr.isDataTypeAttribute === true;
+      });
+
+      if (!isNullOrUndefined(found)) {
+        this._dataType = found.key;
+        return found.key;
       }
     }
   }]);
 
   return YupSchemaRuleDescriptor;
 }();
-var YupSchemaRuleAttributeDescription = function YupSchemaRuleAttributeDescription(key) {
+var YupSchemaRuleAttributeDescriptor = function YupSchemaRuleAttributeDescriptor(key) {
   var values = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
 
-  _classCallCheck(this, YupSchemaRuleAttributeDescription);
+  _classCallCheck(this, YupSchemaRuleAttributeDescriptor);
 
   this.key = key;
   this.values = values;
+  this.isDataTypeAttribute = YUP_TYPE_LIST.includes(key);
 };
 
 /**
@@ -955,18 +991,24 @@ function traverseYupSchemaAst (ast) {
 function traverseRules(value, attributes) {
   if (t.isCallExpression(value)) {
     var callee = value.callee;
+    attributes.push(new YupSchemaRuleAttributeDescriptor(t.isMemberExpression(callee) ? callee.property.name : callee.name, parseValues(value.arguments)));
 
-    if (t.isIdentifier(callee)) {
-      var name = callee.name;
-      attributes.push(new YupSchemaRuleAttributeDescription(name));
-      return;
-    } else if (t.isMemberExpression(callee)) {
-      var object = callee.object,
-          property = callee.property;
-      attributes.push(new YupSchemaRuleAttributeDescription(property.name));
-      traverseRules(object, attributes);
+    if (t.isMemberExpression(callee)) {
+      traverseRules(callee.object, attributes);
     }
   }
+}
+
+function parseValues(parameters) {
+  return parameters.map(function (arg) {
+    if (t.isArrayExpression(arg)) {
+      return arg.elements.map(function (e) {
+        return e.value;
+      });
+    } else {
+      return arg.value;
+    }
+  });
 }
 
 function jsonMock2YupSchema(file) {

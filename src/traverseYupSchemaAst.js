@@ -6,7 +6,7 @@
 import {
   YupSchemaDescription,
   YupSchemaRuleDescriptor,
-  YupSchemaRuleAttributeDescription,
+  YupSchemaRuleAttributeDescriptor,
 } from './SchemaDescription';
 import traverse from '@babel/traverse';
 import * as t from '@babel/types';
@@ -63,16 +63,26 @@ export default function (ast) {
 function traverseRules(value, attributes) {
   if (t.isCallExpression(value)) {
     const { callee } = value;
-    if (t.isIdentifier(callee)) {
-      const { name } = callee;
-      attributes.push(new YupSchemaRuleAttributeDescription(name));
 
-      return;
-    } else if (t.isMemberExpression(callee)) {
-      const { object, property } = callee;
-      attributes.push(new YupSchemaRuleAttributeDescription(property.name));
+    attributes.push(
+      new YupSchemaRuleAttributeDescriptor(
+        t.isMemberExpression(callee) ? callee.property.name : callee.name,
+        parseValues(value.arguments),
+      ),
+    );
 
-      traverseRules(object, attributes);
+    if (t.isMemberExpression(callee)) {
+      traverseRules(callee.object, attributes);
     }
   }
+}
+
+function parseValues(parameters) {
+  return parameters.map((arg) => {
+    if (t.isArrayExpression(arg)) {
+      return arg.elements.map((e) => e.value);
+    } else {
+      return arg.value;
+    }
+  });
 }
