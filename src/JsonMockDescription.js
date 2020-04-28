@@ -1,4 +1,4 @@
-import { isNotEmptyString } from "./lib/asserts";
+import { isNotEmptyString } from './lib/asserts';
 
 /**
  * Json Mock 描述文档
@@ -27,7 +27,7 @@ export class JsonMockPropertyAnnotation {
   constructor(header, body) {
     this.header = header;
     this.body = body;
-    this.parameters = [];
+    // this.parameters = [];
   }
 
   get method() {

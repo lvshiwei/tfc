@@ -3,6 +3,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
 function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
 
 var fs = _interopDefault(require('fs'));
+var path = _interopDefault(require('path'));
 var traverse = _interopDefault(require('@babel/traverse'));
 var parser = require('@babel/parser');
 var t = require('@babel/types');
@@ -44,83 +45,6 @@ function _createClass(Constructor, protoProps, staticProps) {
   if (protoProps) _defineProperties(Constructor.prototype, protoProps);
   if (staticProps) _defineProperties(Constructor, staticProps);
   return Constructor;
-}
-
-function _inherits(subClass, superClass) {
-  if (typeof superClass !== "function" && superClass !== null) {
-    throw new TypeError("Super expression must either be null or a function");
-  }
-
-  subClass.prototype = Object.create(superClass && superClass.prototype, {
-    constructor: {
-      value: subClass,
-      writable: true,
-      configurable: true
-    }
-  });
-  if (superClass) _setPrototypeOf(subClass, superClass);
-}
-
-function _getPrototypeOf(o) {
-  _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) {
-    return o.__proto__ || Object.getPrototypeOf(o);
-  };
-  return _getPrototypeOf(o);
-}
-
-function _setPrototypeOf(o, p) {
-  _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) {
-    o.__proto__ = p;
-    return o;
-  };
-
-  return _setPrototypeOf(o, p);
-}
-
-function _isNativeReflectConstruct() {
-  if (typeof Reflect === "undefined" || !Reflect.construct) return false;
-  if (Reflect.construct.sham) return false;
-  if (typeof Proxy === "function") return true;
-
-  try {
-    Date.prototype.toString.call(Reflect.construct(Date, [], function () {}));
-    return true;
-  } catch (e) {
-    return false;
-  }
-}
-
-function _assertThisInitialized(self) {
-  if (self === void 0) {
-    throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
-  }
-
-  return self;
-}
-
-function _possibleConstructorReturn(self, call) {
-  if (call && (typeof call === "object" || typeof call === "function")) {
-    return call;
-  }
-
-  return _assertThisInitialized(self);
-}
-
-function _createSuper(Derived) {
-  return function () {
-    var Super = _getPrototypeOf(Derived),
-        result;
-
-    if (_isNativeReflectConstruct()) {
-      var NewTarget = _getPrototypeOf(this).constructor;
-
-      result = Reflect.construct(Super, arguments, NewTarget);
-    } else {
-      result = Super.apply(this, arguments);
-    }
-
-    return _possibleConstructorReturn(this, result);
-  };
 }
 
 function _slicedToArray(arr, i) {
@@ -240,7 +164,7 @@ var isNull = function isNull(v) {
 var isUndefined = function isUndefined(v) {
   return typeof v === "undefined";
 };
-var isNullOrUndefined = function isNullOrUndefined(v) {
+var isNullOrUndefined$1 = function isNullOrUndefined(v) {
   return isNull(v) || isUndefined(v);
 };
 var isNotEmptyArray = function isNotEmptyArray(v) {
@@ -281,8 +205,7 @@ var JsonMockPropertyAnnotation = /*#__PURE__*/function () {
     _classCallCheck(this, JsonMockPropertyAnnotation);
 
     this.header = header;
-    this.body = body;
-    this.parameters = [];
+    this.body = body; // this.parameters = [];
   }
 
   _createClass(JsonMockPropertyAnnotation, [{
@@ -296,43 +219,27 @@ var JsonMockPropertyAnnotation = /*#__PURE__*/function () {
 }();
 
 /**
- * 解析JSON mock脚本文档, 生成描述文档
- * @param {}} file
- * @param {*} encoding
+ * parse JSON Mock script content, generate JSON Mock Description
+ * @see ./JsonMockDescription.js
+ * @param {String} text
  */
 
-function parseJsonMock (file) {
-  var encoding = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : "utf8";
-  return new Promise(function (resolve, reject) {
-    fs.readFile(file, encoding, function (err, contents) {
-      if (err) {
-        console.error(err);
-        reject(err);
-        return;
-      }
-
-      var doc = parser.parse(contents, {
-        sourceType: "module"
-      });
-      var description = parseJsonMockAST(doc);
-      resolve(description);
-    });
+function parseJsonMock (text) {
+  var ast = parser.parse(text, {
+    sourceType: 'module'
   });
+  var description = traverseJsonMockAST(ast);
+  return description;
 }
-/**
- * 解析Json Mock脚本语法术, 生成描述文档
- * @param {ast} jsonASTDocument
- */
-
-function parseJsonMockAST(jsonASTDocument) {
+function traverseJsonMockAST(ast) {
   var description = new JsonMockDescription();
   var propertyVisitor = {
     ObjectProperty: function ObjectProperty(path) {
-      var property = parseJsonMockProperty(path.node);
+      var property = makeJsonMockProperty(path.node);
       description.properties.push(property);
     }
   };
-  traverse(jsonASTDocument, {
+  traverse(ast, {
     ExportDefaultDeclaration: function ExportDefaultDeclaration(path) {
       path.traverse({
         ObjectExpression: function ObjectExpression(path) {
@@ -348,14 +255,14 @@ function parseJsonMockAST(jsonASTDocument) {
  * @param {Node} astNode ast 节点
  */
 
-function parseJsonMockProperty(astNode) {
+function makeJsonMockProperty(astNode) {
   var key = astNode.key,
       value = astNode.value,
       leadingComments = astNode.leadingComments;
   var anotations = leadingComments.map(function (comment) {
-    return parseAnnotation(key.name, comment);
+    return makeAnnotation(key.name, comment);
   }).filter(function (i) {
-    return !isNullOrUndefined(i);
+    return !isNullOrUndefined$1(i);
   });
   return new JsonMockPropertyDescriptor(key.name, value.value, anotations);
 }
@@ -364,8 +271,8 @@ function parseJsonMockProperty(astNode) {
  * @param {*} text
  */
 
-function parseAnnotation(key, leadingComment) {
-  if (leadingComment.value.trim() === "") {
+function makeAnnotation(key, leadingComment) {
+  if (leadingComment.value.trim() === '') {
     return null;
   }
 
@@ -382,159 +289,18 @@ function parseAnnotation(key, leadingComment) {
     if (isNotEmptyString(b)) {
       header = b.trim();
       body = c.trim();
-    } else if (b === "" && c.includes("@")) {
+    } else if (b === '' && c.includes('@')) {
       header = c.trim();
       body = null;
     } else {
-      header = "@label";
+      header = '@label';
       body = c.trim();
     }
 
     return new JsonMockPropertyAnnotation(header, body);
   } else {
-    return new JsonMockPropertyAnnotation("@label", key);
+    return new JsonMockPropertyAnnotation('@label', key);
   }
-}
-
-var TypeDescriptor = /*#__PURE__*/function () {
-  function TypeDescriptor(name) {
-    _classCallCheck(this, TypeDescriptor);
-
-    this.name = name;
-  }
-
-  _createClass(TypeDescriptor, [{
-    key: "toString",
-    value: function toString() {
-      return this.name;
-    }
-  }], [{
-    key: "parse",
-    value: function parse(ast) {
-      var node = ast.node;
-      var name = node.callee.name || node.callee.property.name;
-
-      if (name === "label") {
-        return new LabelDescriptor(name, ast);
-      } else {
-        return new TypeDescriptor(name);
-      }
-    }
-  }]);
-
-  return TypeDescriptor;
-}();
-var LabelDescriptor = /*#__PURE__*/function (_TypeDescriptor) {
-  _inherits(LabelDescriptor, _TypeDescriptor);
-
-  var _super = _createSuper(LabelDescriptor);
-
-  function LabelDescriptor(name, ast) {
-    var _this;
-
-    _classCallCheck(this, LabelDescriptor);
-
-    _this = _super.call(this, name);
-    _this.value = isNotEmptyArray(ast.node.arguments) ? ast.node.arguments[0].value : null;
-    return _possibleConstructorReturn(_this, _assertThisInitialized(_this));
-  }
-
-  _createClass(LabelDescriptor, [{
-    key: "toString",
-    value: function toString() {
-      return this.name + ": " + this.value;
-    }
-  }]);
-
-  return LabelDescriptor;
-}(TypeDescriptor);
-
-function parseYupSchema (file) {
-  var encoding = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : "utf8";
-  return new Promise(function (resolve, reject) {
-    fs.readFile(file, encoding, function (err, contents) {
-      if (err) {
-        console.error("Yup schema parse error", err);
-        reject(err);
-        return;
-      }
-
-      var doc = parser.parse(contents, {
-        sourceType: "module"
-      });
-      var schema = {};
-
-      var isCalleeNode = function isCalleeNode(node, name) {
-        return t.isIdentifier(node.callee, {
-          name: name
-        }) || t.isMemberExpression(node.callee) && t.isIdentifier(node.callee.property, {
-          name: name
-        });
-      };
-
-      var isRootNode = function isRootNode(node) {
-        return isCalleeNode(node, "object");
-      };
-
-      var typeVisitor = {
-        CallExpression: function CallExpression(path) {
-          var parentKey = path.parentKey;
-
-          if (parentKey === "arguments") {
-            path.skip();
-            return;
-          }
-
-          var td = TypeDescriptor.parse(path);
-
-          if (!isNullOrUndefined(td)) {
-            schema[this.key].push(td);
-          } else {
-            console.error("parse error:", this.key);
-          }
-        },
-        ObjectProperty: function ObjectProperty(path) {
-          path.skip();
-        }
-      };
-      var propertyVisitor = {
-        ObjectProperty: function ObjectProperty(path) {
-          var key = path.node.key;
-
-          if (key.name === "is" || key.name === "then" || key.name === "otherwise") {
-            path.skip();
-            return;
-          }
-
-          schema[key.name] = [];
-          path.traverse(typeVisitor, {
-            key: key.name
-          });
-        }
-      };
-      var rootVisitor = {
-        ObjectExpression: function ObjectExpression(path) {
-          var parentKey = path.parentKey,
-              parent = path.parent;
-
-          if (parentKey === "arguments" && isRootNode(parent)) {
-            path.traverse(propertyVisitor);
-            return;
-          }
-        }
-      };
-      traverse(doc, {
-        CallExpression: function CallExpression(p) {
-          var node = p.node;
-
-          if (isRootNode(node)) {
-            p.traverse(rootVisitor);
-          }
-        }
-      });
-      resolve(schema);
-    });
-  });
 }
 
 var YUP_TYPE_STRING = 'string';
@@ -551,6 +317,171 @@ var YUP_KEYWORD_LABEL = 'label';
 
 var YUP_TYPE_LIST = [YUP_TYPE_MIXED, YUP_TYPE_STRING, YUP_TYPE_Number, YUP_TYPE_DATE, YUP_TYPE_ARRAY, YUP_TYPE_BOOL];
 
+var YupSchemaDescription = function YupSchemaDescription() {
+  _classCallCheck(this, YupSchemaDescription);
+
+  this.rules = [];
+};
+var YupSchemaRuleDescriptor = /*#__PURE__*/function () {
+  function YupSchemaRuleDescriptor(name) {
+    var attributes = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
+
+    _classCallCheck(this, YupSchemaRuleDescriptor);
+
+    this.name = name;
+    this.attributes = attributes;
+    this._label = null;
+    this._dataType = null;
+    this._isRequired = null;
+  }
+
+  _createClass(YupSchemaRuleDescriptor, [{
+    key: "isRequired",
+    value: function isRequired() {
+      if (!isNullOrUndefined$1(this._isRequired)) {
+        return this._isRequired;
+      }
+
+      return this.hasAttribute(YUP_KEYWORD_REQUIRED);
+    }
+  }, {
+    key: "hasAttribute",
+    value: function hasAttribute(name) {
+      return this.attributes.some(function (_ref) {
+        var key = _ref.key;
+        return key === name;
+      });
+    }
+  }, {
+    key: "getAttribute",
+    value: function getAttribute(key) {
+      return this.attributes.find(function (attr) {
+        return attr.key === key;
+      });
+    }
+  }, {
+    key: "label",
+    get: function get() {
+      if (!isNullOrUndefined$1(this._label)) {
+        return this._label;
+      }
+
+      var found = this.attributes.find(function (attr) {
+        return attr.key === YUP_KEYWORD_LABEL;
+      });
+
+      if (!isNullOrUndefined$1(found)) {
+        this._label = found.values[0];
+        return this._label;
+      }
+    }
+  }, {
+    key: "dataType",
+    get: function get() {
+      if (!isNullOrUndefined$1(this._dataType)) {
+        return this._dataType;
+      }
+
+      var found = this.attributes.find(function (attr) {
+        return attr.isDataTypeAttribute === true;
+      });
+
+      if (!isNullOrUndefined$1(found)) {
+        this._dataType = found.key;
+        return found.key;
+      }
+    }
+  }]);
+
+  return YupSchemaRuleDescriptor;
+}();
+var YupSchemaRuleAttributeDescriptor = function YupSchemaRuleAttributeDescriptor(key) {
+  var values = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
+
+  _classCallCheck(this, YupSchemaRuleAttributeDescriptor);
+
+  this.key = key;
+  this.values = values;
+  this.isDataTypeAttribute = YUP_TYPE_LIST.includes(key);
+};
+
+/**
+ * parse Yup Schema script content to make Yup Schema description
+ * @see ./YupSchemaDescription.js
+ * @param {string} text
+ */
+
+function parseYupSchema (text) {
+  var ast = parser.parse(text, {
+    sourceType: 'module'
+  });
+  var description = traverseYupSchemaAST(ast);
+  return description;
+}
+function traverseYupSchemaAST(ast) {
+  var meetExportDefaultObjectNode = false;
+  var desc = new YupSchemaDescription();
+  traverse(ast, {
+    ExportDefaultDeclaration: function ExportDefaultDeclaration(path) {
+      var objectNode = path.node.declaration;
+
+      if (t.isCallExpression(objectNode) && t.isIdentifier(objectNode.callee) && objectNode.callee.name === 'object') {
+        meetExportDefaultObjectNode = true;
+
+        var _iterator = _createForOfIteratorHelper(objectNode.arguments[0].properties),
+            _step;
+
+        try {
+          for (_iterator.s(); !(_step = _iterator.n()).done;) {
+            var property = _step.value;
+            var key = property.key,
+                value = property.value;
+            var attributes = [];
+            makeRuleDescriptor(value, attributes);
+            var rule = new YupSchemaRuleDescriptor(key.name);
+            rule.attributes = attributes;
+            desc.rules.push(rule);
+          }
+        } catch (err) {
+          _iterator.e(err);
+        } finally {
+          _iterator.f();
+        }
+      }
+    }
+  });
+
+  if (meetExportDefaultObjectNode) {
+    console.log('done.');
+    return desc;
+  } else {
+    console.error('did not meet export default object call expression. failed!');
+  }
+}
+
+function makeRuleDescriptor(value, attributes) {
+  if (t.isCallExpression(value)) {
+    var callee = value.callee;
+    attributes.push(new YupSchemaRuleAttributeDescriptor(t.isMemberExpression(callee) ? callee.property.name : callee.name, makeValues(value.arguments)));
+
+    if (t.isMemberExpression(callee)) {
+      makeRuleDescriptor(callee.object, attributes);
+    }
+  }
+}
+
+function makeValues(parameters) {
+  return parameters.map(function (arg) {
+    if (t.isArrayExpression(arg)) {
+      return arg.elements.map(function (e) {
+        return e.value;
+      });
+    } else {
+      return arg.value;
+    }
+  });
+}
+
 /**
  * 检查指令是否支持
  */
@@ -559,13 +490,13 @@ var isSupported = function isSupported(d) {
   return YUP_TYPE_LIST.includes(d);
 };
 /**
- * 生成Yup Schema前的准备和预处理工作
- * @param {JsonMockDescription} jsonMockDescription 描述对象
+ * prepare for generating YupSchema
+ * @param {JsonMockDescription} jsonMockDescription description object
  */
 
 
 function prepareGenerateYupSchema (jsonMockDescription) {
-  console.log("preparing >>>>>>>>");
+  console.log('preparing ....');
 
   var _iterator = _createForOfIteratorHelper(jsonMockDescription.properties),
       _step;
@@ -590,7 +521,7 @@ function ensureKeyAnnotation(property) {
     return isSupported(a.method);
   });
 
-  if (!isNullOrUndefined(found)) {
+  if (!isNullOrUndefined$1(found)) {
     return found.method;
   }
 
@@ -602,10 +533,10 @@ function ensureKeyAnnotation(property) {
     var b = /^(true|false)$/i;
     var d = /^[0-9]?$/;
     var f = /^[1-9]d*.d*|0.d*[1-9]d*$/;
-    if (b.test(value)) return "@bool";
-    if (d.test(value)) return "@number";
-    if (f.test(value)) return "@number";
-    return "@string";
+    if (b.test(value)) return '@bool';
+    if (d.test(value)) return '@number';
+    if (f.test(value)) return '@number';
+    return '@string';
   }
 
   return annotation.method;
@@ -667,7 +598,7 @@ function preciselyAnnotationParameters(property) {
       var params = annotation.body;
 
       if (isNotEmptyString(params)) {
-        annotation.parameters = params.split(",").map(function (s) {
+        annotation.parameters = params.split(',').map(function (s) {
           return cast(s.trim());
         });
       }
@@ -679,68 +610,56 @@ function preciselyAnnotationParameters(property) {
   }
 }
 
+var CODE_TEMPLATE = "\n/**\n* @overview A Yup schema generated by tfc.\n*/\nimport { object, mixed, date, string, number, array } from \"yup\";\n\nexport default object();\n";
 /**
- * 生成 Yup 验证架构脚本
- * @param {JsonMockDescription} description 描述文档
+ * generate yup schema code
+ * @see ./JsonMockDescription.js
+ * @param {JsonMockDescription} description json mock descripton object
  */
 
 function generateYupSchema (description) {
-  return new Promise(function (resolve, reject) {
-    if (!(description instanceof JsonMockDescription)) {
-      console.error('不能生成yup验证规则, 收到的参数不符合预期!');
-      reject();
-      return;
-    }
-
-    var code = "\n  /**\n   * @overview A Yup schema generated by tfc.\n   */\n  import { object, mixed, date, string, number, array } from \"yup\";\n\n  export default object();\n  ";
-    var ast = parser.parse(code, {
-      sourceType: 'module'
-    });
-    var objectDeclare = ast.program.body[1].declaration;
-    var objectProperties = [];
-    prepareGenerateYupSchema(description);
-
-    var _iterator = _createForOfIteratorHelper(description.properties),
-        _step;
-
-    try {
-      for (_iterator.s(); !(_step = _iterator.n()).done;) {
-        var property = _step.value;
-        var rules = buildRulesChain(property);
-        objectProperties.push(t.objectProperty(t.identifier(property.key), rules));
-      }
-    } catch (err) {
-      _iterator.e(err);
-    } finally {
-      _iterator.f();
-    }
-
-    objectDeclare.arguments.push(t.objectExpression(objectProperties));
-    var output = generate(ast, {}, code);
-    var text = ensureReadableText(output.code);
-    resolve(text);
+  prepareGenerateYupSchema(description);
+  var ast = parser.parse(CODE_TEMPLATE, {
+    sourceType: 'module'
   });
-}
-/**
- * 构建规则链
- */
+  var objectDeclaration = ast.program.body[1].declaration;
+  var properties = [];
 
-function buildRulesChain(property) {
-  if (isNotEmptyArray(property.annotations)) {
-    return makeRuleExpression(property.annotations, 0);
+  var _iterator = _createForOfIteratorHelper(description.properties),
+      _step;
+
+  try {
+    for (_iterator.s(); !(_step = _iterator.n()).done;) {
+      var property = _step.value;
+      var rules = makeRule(property);
+      properties.push(t.objectProperty(t.identifier(property.key), rules));
+    }
+  } catch (err) {
+    _iterator.e(err);
+  } finally {
+    _iterator.f();
   }
 
-  console.warn('无法构建规则, property 参数是空的!');
+  objectDeclaration.arguments.push(t.objectExpression(properties));
+  var output = generate(ast, {}, CODE_TEMPLATE);
+  var text = ensureReadableText(output.code);
+  return text;
 }
 
-function makeRuleExpression(annotations, index) {
+function makeRule(property) {
+  if (isNotEmptyArray(property.annotations)) {
+    return buildChainExpression(property.annotations, 0);
+  }
+}
+
+function buildChainExpression(annotations, index) {
   if (annotations.length === 1 || index === annotations.length - 1) {
     var _ann = annotations[index];
     return t.callExpression(t.identifier(_ann.method), makeRuleArguments(_ann));
   }
 
   var ann = annotations[index];
-  return t.callExpression(t.memberExpression(makeRuleExpression(annotations, index + 1), t.identifier(ann.method)), makeRuleArguments(annotations[index]));
+  return t.callExpression(t.memberExpression(buildChainExpression(annotations, index + 1), t.identifier(ann.method)), makeRuleArguments(annotations[index]));
 }
 /**
  * 构建规则参数
@@ -766,7 +685,7 @@ function makeRuleArguments(annotation) {
     }
   }
 
-  return annotation.parameters.map(cast);
+  return isNotEmptyArray(annotation.parameters) ? annotation.parameters.map(cast) : [];
 }
 /**
  * 将unicode字符转化成可读的汉字
@@ -782,306 +701,140 @@ function ensureReadableText(unicodeText) {
   return decodeURIComponent(dest);
 }
 
-function generateFormUI (schema) {
-  var code = "\n  /**\n   * @overview A form component generated by tfc.\n   * @author your.name@corp.com\n   */\n  import React from \"react\";\n  import classnames from \"classnames\";\n  import schema from \"./schema\";\n  import { useModel, useValidation } from \"./hooks\";\n  import { Card, List, InputItem, Picker, DatePicker } from \"antd-mobile\";\n\n  /**\n   * Say something to avoid warnning from eslint\n   */\n  export default function () {\n    const [model, setModel] = useModel({ preOpeningTime: new Date() });\n    const [validate, errors] = useValidation(schema);\n  \n    const handleSubmit = () =>\n      validate(model)\n        .then(() => alert(\"Amazing!!\"))\n        .catch(console.error);\n  \n    const handleChangeInput = (name) => (value) => setModel(name, value);\n    const handleLeaveInput = (name) => () => validate(name, model[name]);\n    const handleChangeSelect = (name) => (value) => {\n      setModel(name, value);\n      validate(name, value);\n    };\n    const renderClassName = (name, properties) =>\n      classnames(...(properties || []), {\n        error: Array.isArray(errors) && errors.some((e) => e.path === name),\n        hasValue: !(model[name] === null || typeof model[name] === \"undefined\"),\n      });\n\n    const Required = () => <i className=\"required\">*</i>;\n  }";
-  var ast = parser.parse(code, {
+/**
+ * @overview generate form code from schema description object
+ * @see ./SchemaDescription.js
+ * @author shiwei.lv
+ */
+var CODE_TEMPLATE$1 = "\n/**\n * @overview A form component generated by tfc.\n * @author your.name@corp.com\n */\nimport React from \"react\";\nimport classnames from \"classnames\";\nimport schema from \"./schema\";\nimport { useModel, useValidation } from \"./hooks\";\nimport { List, InputItem, Picker, DatePicker } from \"antd-mobile\";\n\n/**\n * Say something to avoid warnning from eslint\n */\nexport default function () {\n  const [model, setModel] = useModel({ preOpeningTime: new Date() });\n  const [validate, errors] = useValidation(schema);\n\n  const handleSubmit = () =>\n    validate(model)\n      .then(() => alert(\"Amazing!!\"))\n      .catch(console.error);\n\n  const handleChangeInput = (name) => (value) => setModel(name, value);\n  const handleLeaveInput = (name) => () => validate(name, model[name]);\n  const handleChangeSelect = (name) => (value) => {\n    setModel(name, value);\n    validate(name, value);\n  };\n  const renderClassName = (name, properties) =>\n    classnames(...(properties || []), {\n      error: Array.isArray(errors) && errors.some((e) => e.path === name),\n      hasValue: !(model[name] === null || typeof model[name] === \"undefined\"),\n    });\n\n  const Required = () => <i className=\"required\">*</i>;\n\n  return <div className=\"form-wrapper\"></div>;\n}";
+function generateAntDesignForm (description) {
+  var ast = parser.parse(CODE_TEMPLATE$1, {
     sourceType: 'module',
     plugins: ['jsx']
   });
   var exportDefault = ast.program.body.find(t.isExportDefaultDeclaration);
+  var returnStatement = exportDefault.declaration.body.body.find(t.isReturnStatement);
+  var divElement = returnStatement.argument;
+  divElement.children.push(newline);
   var newline = t.jsxText('\n');
-  var div = t.jsxIdentifier('div');
-  var divOpen = t.jsxOpeningElement(div, []);
-  var divClose = t.jsxClosingElement(div);
-  var list = t.jsxIdentifier('List');
-  var listComp = t.jsxElement(t.jsxOpeningElement(list, []), t.jsxClosingElement(list), [newline]);
+  var fields = t.jsxElement(t.jsxOpeningElement(t.jsxIdentifier('List'), []), t.jsxClosingElement(t.jsxIdentifier('List')), [newline]);
 
-  for (var key in schema) {
-    var item = t.jsxIdentifier('InputItem');
-    var itemComp = t.jsxElement(t.jsxOpeningElement(item, [t.jsxAttribute(t.jsxIdentifier('name'), t.stringLiteral(key)), t.jsxAttribute(t.jsxIdentifier('className'), t.jsxExpressionContainer(t.callExpression(t.identifier('renderClassName'), [t.stringLiteral(key)]))), t.jsxAttribute(t.jsxIdentifier('onChange'), t.jsxExpressionContainer(t.callExpression(t.identifier('handleChangeInput'), [t.stringLiteral(key)])))]), t.jsxClosingElement(item), []);
-    var rules = schema[key];
-    var labelDesc = schema[key].find(function (i) {
-      return i instanceof LabelDescriptor;
-    });
-
-    if (labelDesc) {
-      itemComp.children.push(t.jsxText(labelDesc.value));
-    }
-
-    var typeDesc = rules.slice(-1)[0];
-
-    if (['string', 'number'].includes(typeDesc.name)) {
-      itemComp.openingElement.attributes.push(t.jsxAttribute(t.jsxIdentifier('onBlur'), t.jsxExpressionContainer(t.callExpression(t.identifier('handleLeaveInput'), [t.stringLiteral(key)]))));
-    }
-
-    var isRequired = rules.some(function (r) {
-      return r.name === 'required';
-    });
-
-    if (isRequired) {
-      itemComp.children.push(t.jsxElement(t.jsxOpeningElement(t.jsxIdentifier('Required'), [], true), null, [], true));
-    }
-
-    listComp.children.push(itemComp);
-    listComp.children.push(newline);
+  for (var rule in description.rules) {
+    fields.children.push(makeField(rule));
   }
 
-  var jsxroot = t.jsxElement(divOpen, divClose, [newline, listComp, newline]);
-  var returnStatement = t.returnStatement(jsxroot);
-  exportDefault.declaration.body.body.push(returnStatement);
-  var output = generate(ast, {}, code);
+  divElement.children.push(newline);
+  var output = generate(ast, {}, CODE_TEMPLATE$1);
   return output.code;
 }
 
-var AbstractSchemaDescription = function AbstractSchemaDescription() {
-  _classCallCheck(this, AbstractSchemaDescription);
+function makeField(ruleDescriptor) {
+  var dataType = ruleDescriptor.dataType;
 
-  this.rules = [];
-};
-var YupSchemaDescription = /*#__PURE__*/function (_AbstractSchemaDescri) {
-  _inherits(YupSchemaDescription, _AbstractSchemaDescri);
-
-  var _super = _createSuper(YupSchemaDescription);
-
-  function YupSchemaDescription() {
-    _classCallCheck(this, YupSchemaDescription);
-
-    return _super.call(this);
+  if (!YUP_TYPE_LIST.includes(dataType)) {
+    return t.jsxEmptyExpression();
   }
 
-  return YupSchemaDescription;
-}(AbstractSchemaDescription);
-var YupSchemaRuleDescriptor = /*#__PURE__*/function () {
-  function YupSchemaRuleDescriptor(name) {
-    var attributes = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
-
-    _classCallCheck(this, YupSchemaRuleDescriptor);
-
-    this.name = name;
-    this.attributes = attributes;
-    this._label = null;
-    this._dataType = null;
-    this._isRequired = null;
-  }
-
-  _createClass(YupSchemaRuleDescriptor, [{
-    key: "isRequired",
-    value: function isRequired() {
-      if (!isNullOrUndefined(this._isRequired)) {
-        return this._isRequired;
-      }
-
-      return this.hasAttribute(YUP_KEYWORD_REQUIRED);
-    }
-  }, {
-    key: "hasAttribute",
-    value: function hasAttribute(name) {
-      return this.attributes.some(function (_ref) {
-        var key = _ref.key;
-        return key === name;
-      });
-    }
-  }, {
-    key: "getAttribute",
-    value: function getAttribute(key) {
-      return this.attributes.find(function (attr) {
-        return attr.key === key;
-      });
-    }
-  }, {
-    key: "label",
-    get: function get() {
-      if (!isNullOrUndefined(this._label)) {
-        return this._label;
-      }
-
-      var found = this.attributes.find(function (attr) {
-        return attr.key === YUP_KEYWORD_LABEL;
-      });
-
-      if (!isNullOrUndefined(found)) {
-        this._label = found.values[0];
-        return this._label;
-      }
-    }
-  }, {
-    key: "dataType",
-    get: function get() {
-      if (!isNullOrUndefined(this._dataType)) {
-        return this._dataType;
-      }
-
-      var found = this.attributes.find(function (attr) {
-        return attr.isDataTypeAttribute === true;
-      });
-
-      if (!isNullOrUndefined(found)) {
-        this._dataType = found.key;
-        return found.key;
-      }
-    }
-  }]);
-
-  return YupSchemaRuleDescriptor;
-}();
-var YupSchemaRuleAttributeDescriptor = function YupSchemaRuleAttributeDescriptor(key) {
-  var values = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
-
-  _classCallCheck(this, YupSchemaRuleAttributeDescriptor);
-
-  this.key = key;
-  this.values = values;
-  this.isDataTypeAttribute = YUP_TYPE_LIST.includes(key);
-};
-
-/**
- * Yup schema
- * @param {*} ast abstract syntax object
- */
-
-function traverseYupSchemaAst (ast) {
-  try {
-    var meetExportDefaultObjectNode = false;
-    var desc = new YupSchemaDescription();
-    traverse(ast, {
-      ExportDefaultDeclaration: function ExportDefaultDeclaration(path) {
-        var objectNode = path.node.declaration;
-
-        if (t.isCallExpression(objectNode) && t.isIdentifier(objectNode.callee) && objectNode.callee.name === 'object') {
-          console.info('> got object node in ast document');
-          meetExportDefaultObjectNode = true;
-
-          var _iterator = _createForOfIteratorHelper(objectNode.arguments[0].properties),
-              _step;
-
-          try {
-            for (_iterator.s(); !(_step = _iterator.n()).done;) {
-              var property = _step.value;
-              var key = property.key,
-                  value = property.value;
-              var attributes = [];
-              traverseRules(value, attributes);
-              var rule = new YupSchemaRuleDescriptor(key.name);
-              rule.attributes = attributes;
-              desc.rules.push(rule);
-            }
-          } catch (err) {
-            _iterator.e(err);
-          } finally {
-            _iterator.f();
-          }
-
-          debugger;
-        }
-      }
-    });
-
-    if (meetExportDefaultObjectNode) {
-      console.log('done.');
-      return desc;
-    } else {
-      console.error('did not meet export default object call expression. failed!');
-    }
-  } catch (e) {
-    console.error('can not visit AST document');
-    console.error(e);
+  if (dataType === YUP_TYPE_DATE) {
+    return makeDatePicker(ruleDescriptor);
+  } else {
+    return makeInputItem(ruleDescriptor);
   }
 }
 
-function traverseRules(value, attributes) {
-  if (t.isCallExpression(value)) {
-    var callee = value.callee;
-    attributes.push(new YupSchemaRuleAttributeDescriptor(t.isMemberExpression(callee) ? callee.property.name : callee.name, parseValues(value.arguments)));
-
-    if (t.isMemberExpression(callee)) {
-      traverseRules(callee.object, attributes);
-    }
-  }
+function makeRequiredElement() {
+  return t.jsxElement(t.jsxOpeningElement(t.jsxIdentifier('Required'), [], true), null, [], true);
 }
 
-function parseValues(parameters) {
-  return parameters.map(function (arg) {
-    if (t.isArrayExpression(arg)) {
-      return arg.elements.map(function (e) {
-        return e.value;
-      });
-    } else {
-      return arg.value;
-    }
-  });
+function makeRenderClassAttribute(name) {
+  return t.jsxAttribute(t.jsxIdentifier('className'), t.jsxExpressionContainer(t.callExpression(t.identifier('renderClassName'), [t.stringLiteral(name)])));
 }
 
-function jsonMock2YupSchema(file) {
-  var encoding = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'utf8';
-  console.info('==== parse JSON mock data and generate Yup schema ====');
-  parseJsonMock(file, encoding).then(function (description) {
-    generateYupSchema(description).then(function (schema) {
-      console.log(schema);
-      fs.writeFile(__dirname + '/schema.js', schema, encoding, function (err) {
-        if (err) {
-          return console.error(err);
-        }
+function makeDatePicker(ruleDescriptor) {
+  var name = ruleDescriptor.name,
+      label = ruleDescriptor.label,
+      isRequired = ruleDescriptor.isRequired;
+  var picker = t.jsxIdentifier('DatePicker');
+  var item = t.jsxIdentifier('List.Item');
+  return t.jsxElement(t.jsxOpeningElement(picker, [t.jsxAttribute(t.identifier('mode'), t.stringLiteral('date')), t.jsxAttribute(t.identifier('onChange'), t.jsxExpressionContainer(t.callExpression(t.identifier('handleSelectChange'), [t.stringLiteral(name)])))]), t.jsxClosingElement(picker), [t.jsxElement(t.jsxOpeningElement(item, [t.jsxAttribute(t.identifier('arrow'), t.stringLiteral('horizontal')), makeRenderClassAttribute(name)]), t.jsxClosingElement(item), [t.jsxText(label), isRequired === true ? makeRequiredElement() : t.jsxEmptyExpression()])]);
+}
 
-        console.log('schema.js was updated');
-      });
+function makeInputItem(ruleDescriptor) {
+  var name = ruleDescriptor.name,
+      label = ruleDescriptor.label,
+      isRequired = ruleDescriptor.isRequired;
+  var inputItem = t.jsxIdentifier('InputItem');
+  return t.jsxElement(t.jsxOpeningElement(inputItem, [makeRenderClassAttribute(name), t.jsxAttribute(t.jsxIdentifier('onChange'), t.jsxExpressionContainer(t.callExpression(t.identifier('handleInputChange'), [t.stringLiteral(name)]))), t.jsxAttribute(t.jsxIdentifier('onBlur'), t.jsxExpressionContainer(t.callExpression(t.identifier('handleLeaveInput'), [t.stringLiteral(name)])))]), t.jsxClosingElement(inputItem), [t.jsxText(label), isRequired === true ? makeRequiredElement() : t.jsxEmptyExpression()]);
+}
+
+function jsonMock2YupSchema(filename) {
+  var saveFile = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+  var saveFileName = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'schema.js';
+  return new Promise(function (resolve, reject) {
+    console.info('==== parse JSON mock script file and generate Yup Schema ====');
+    return readFile(filename).then(function (content) {
+      var description = parseJsonMock(content);
+      var code = generateYupSchema(description);
+      console.log('==  generate Yup schema ==');
+      console.log(code);
+
+      if (saveFile) {
+        return saveCode(code, saveFileName);
+      } else {
+        resolve();
+      }
     });
   });
 }
-function yupSchema2FormUI(file) {
-  var encoding = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'utf8';
-  console.info('==== parse Yup schema and generate form UI ====');
-  parseYupSchema(file, encoding).then(function (schema) {
-    console.log(schema);
-    var code = generateFormUI(schema);
-    console.log(code);
-  });
-}
-function traverseYupSchema(file) {
-  var encoding = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'utf8';
-  fs.readFile(file, encoding, function (err, contents) {
-    if (err) {
-      console.error(err);
-      reject(err);
-      return;
-    }
+function yupSchema2AntDesignForm(filename) {
+  var saveFile = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+  var saveFileName = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'form.jsx';
+  return new Promise(function (resolve) {
+    console.info('==== parse Yup schema and generate Ant-Design form code ====');
+    return readFile(filename).then(function (content) {
+      var description = parseYupSchema(content);
+      var code = generateAntDesignForm(description);
+      console.log('==  generate form ==');
+      console.log(code);
 
-    var ast = parser.parse(contents, {
-      sourceType: 'module'
-    });
-
-    if (!isNullOrUndefined(ast)) {
-      traverseYupSchemaAst(ast);
-    }
-  });
-}
-function go(file) {
-  var encoding = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'utf8';
-  parseJsonMock(file, encoding).then(function (description) {
-    generateYupSchema(description).then(function (schema) {
-      fs.writeFile(__dirname + '/schema.js', schema, encoding, function (err) {
-        if (err) {
-          return console.error(err);
-        }
-
-        console.log('schema.js was updated');
-      });
-      parseYupSchema(__dirname + '/schema.js').then(function (schema) {
-        var code = generateFormUI(schema);
-        fs.writeFile(__dirname + '/form.jsx', code, encoding, function (err) {
-          if (err) {
-            return console.error(err);
-          }
-
-          console.log('form.jsx was updated');
-          console.log('done.');
-        });
-      });
+      if (saveFile) {
+        return saveCode(code, saveFileName);
+      } else {
+        resolve();
+      }
     });
   });
 }
 
-exports.go = go;
+function readFile(filename) {
+  var encoding = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'utf8';
+  return new Promise(function (resolve, reject) {
+    fs.readFile(path.resolve(__dirname, filename), encoding, function (err, content) {
+      if (err) {
+        console.error(err);
+        reject();
+      }
+
+      resolve(content);
+    });
+  });
+}
+
+function saveCode(code, fileName) {
+  var encoding = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'utf8';
+  return new Promise(function (resolve, reject) {
+    fs.writeFile(path.resolve(__dirname, fileName), code, encoding, function (err) {
+      if (!isNullOrUndefined(err)) {
+        console.error(err);
+        reject();
+      }
+
+      console.log(filename + ' save done.');
+      resolve();
+    });
+  });
+}
+
 exports.jsonMock2YupSchema = jsonMock2YupSchema;
-exports.traverseYupSchema = traverseYupSchema;
-exports.yupSchema2FormUI = yupSchema2FormUI;
+exports.yupSchema2AntDesignForm = yupSchema2AntDesignForm;
 //# sourceMappingURL=index.js.map

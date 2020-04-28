@@ -1,54 +1,39 @@
-import fs from "fs";
-import traverse from "@babel/traverse";
-import { parse } from "@babel/parser";
+import traverse from '@babel/traverse';
+import { parse } from '@babel/parser';
 import {
   isNotEmptyArray,
   isNullOrUndefined,
   isNotEmptyString,
-} from "./lib/asserts";
+} from './lib/asserts';
 import {
   JsonMockDescription,
   JsonMockPropertyDescriptor,
   JsonMockPropertyAnnotation,
-} from "./JsonMockDescription";
+} from './JsonMockDescription';
 
 /**
- * 解析JSON mock脚本文档, 生成描述文档
- * @param {}} file
- * @param {*} encoding
+ * parse JSON Mock script content, generate JSON Mock Description
+ * @see ./JsonMockDescription.js
+ * @param {String} text
  */
-export default function (file, encoding = "utf8") {
-  return new Promise((resolve, reject) => {
-    fs.readFile(file, encoding, function (err, contents) {
-      if (err) {
-        console.error(err);
-        reject(err);
-        return;
-      }
+export default function (text) {
+  const ast = parse(text, { sourceType: 'module' });
+  const description = traverseJsonMockAST(ast);
 
-      const doc = parse(contents, { sourceType: "module" });
-      const description = parseJsonMockAST(doc);
-
-      resolve(description);
-    });
-  });
+  return description;
 }
 
-/**
- * 解析Json Mock脚本语法术, 生成描述文档
- * @param {ast} jsonASTDocument
- */
-export function parseJsonMockAST(jsonASTDocument) {
+export function traverseJsonMockAST(ast) {
   const description = new JsonMockDescription();
 
   const propertyVisitor = {
     ObjectProperty(path) {
-      const property = parseJsonMockProperty(path.node);
+      const property = makeJsonMockProperty(path.node);
       description.properties.push(property);
     },
   };
 
-  traverse(jsonASTDocument, {
+  traverse(ast, {
     ExportDefaultDeclaration(path) {
       path.traverse({
         ObjectExpression(path) {
@@ -65,10 +50,10 @@ export function parseJsonMockAST(jsonASTDocument) {
  * 解析抽象语法节点
  * @param {Node} astNode ast 节点
  */
-export function parseJsonMockProperty(astNode) {
+export function makeJsonMockProperty(astNode) {
   const { key, value, leadingComments } = astNode;
   const anotations = leadingComments
-    .map((comment) => parseAnnotation(key.name, comment))
+    .map((comment) => makeAnnotation(key.name, comment))
     .filter((i) => !isNullOrUndefined(i));
 
   return new JsonMockPropertyDescriptor(key.name, value.value, anotations);
@@ -77,8 +62,8 @@ export function parseJsonMockProperty(astNode) {
  * 解析申明
  * @param {*} text
  */
-export function parseAnnotation(key, leadingComment) {
-  if (leadingComment.value.trim() === "") {
+export function makeAnnotation(key, leadingComment) {
+  if (leadingComment.value.trim() === '') {
     return null;
   }
 
@@ -91,16 +76,16 @@ export function parseAnnotation(key, leadingComment) {
     if (isNotEmptyString(b)) {
       header = b.trim();
       body = c.trim();
-    } else if (b === "" && c.includes("@")) {
+    } else if (b === '' && c.includes('@')) {
       header = c.trim();
       body = null;
     } else {
-      header = "@label";
+      header = '@label';
       body = c.trim();
     }
 
     return new JsonMockPropertyAnnotation(header, body);
   } else {
-    return new JsonMockPropertyAnnotation("@label", key);
+    return new JsonMockPropertyAnnotation('@label', key);
   }
 }

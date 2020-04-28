@@ -1,21 +1,21 @@
 /**
- * @overview 生成Yup Schema前的准备和预处理工作
+ * @overview prepare for generating YupSchema
  * @author shiwei.lv
  */
 
-import { isNullOrUndefined, isNotEmptyString } from "./lib/asserts";
-import { JsonMockPropertyAnnotation } from "./JsonMockDescription";
-import { YUP_TYPE_LIST } from "./constants";
+import { isNullOrUndefined, isNotEmptyString } from './lib/asserts';
+import { JsonMockPropertyAnnotation } from './JsonMockDescription';
+import { YUP_TYPE_LIST } from './constants';
 /**
  * 检查指令是否支持
  */
 const isSupported = (d) => YUP_TYPE_LIST.includes(d);
 /**
- * 生成Yup Schema前的准备和预处理工作
- * @param {JsonMockDescription} jsonMockDescription 描述对象
+ * prepare for generating YupSchema
+ * @param {JsonMockDescription} jsonMockDescription description object
  */
 export default function (jsonMockDescription) {
-  console.log("preparing >>>>>>>>");
+  console.log('preparing ....');
   for (const property of jsonMockDescription.properties) {
     ensureKeyAnnotation(property);
     sortAnnotations(property);
@@ -40,11 +40,11 @@ function ensureKeyAnnotation(property) {
     const d = /^[0-9]?$/;
     const f = /^[1-9]d*.d*|0.d*[1-9]d*$/;
 
-    if (b.test(value)) return "@bool";
-    if (d.test(value)) return "@number";
-    if (f.test(value)) return "@number";
+    if (b.test(value)) return '@bool';
+    if (d.test(value)) return '@number';
+    if (f.test(value)) return '@number';
 
-    return "@string";
+    return '@string';
   }
 
   return annotation.method;
@@ -91,7 +91,7 @@ function preciselyAnnotationParameters(property) {
   for (const annotation of property.annotations) {
     const params = annotation.body;
     if (isNotEmptyString(params)) {
-      annotation.parameters = params.split(",").map((s) => cast(s.trim()));
+      annotation.parameters = params.split(',').map((s) => cast(s.trim()));
     }
   }
 }

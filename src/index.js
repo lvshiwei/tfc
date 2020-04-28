@@ -1,76 +1,89 @@
 import fs from 'fs';
-
+import path from 'path';
 import parseJsonMock from './parseJsonMock';
 import parseYupSchema from './parseYupSchema';
 import generateYupSchema from './generateYupSchema';
-import generateFormUI from './generateFormUI';
-import { parse } from '@babel/parser';
-import traverseYupSchemaAst from './traverseYupSchemaAst';
-import { isNullOrUndefined } from './lib/asserts';
+import generateAntDesignForm from './generateAntDesignForm';
 
-export function jsonMock2YupSchema(file, encoding = 'utf8') {
-  console.info('==== parse JSON mock data and generate Yup schema ====');
+export function jsonMock2YupSchema(
+  filename,
+  saveFile = false,
+  saveFileName = 'schema.js',
+) {
+  return new Promise((resolve, reject) => {
+    console.info(
+      '==== parse JSON mock script file and generate Yup Schema ====',
+    );
 
-  parseJsonMock(file, encoding).then((description) => {
-    generateYupSchema(description).then((schema) => {
-      console.log(schema);
+    return readFile(filename).then((content) => {
+      const description = parseJsonMock(content);
+      const code = generateYupSchema(description);
 
-      fs.writeFile(__dirname + '/schema.js', schema, encoding, function (err) {
-        if (err) {
-          return console.error(err);
-        }
-        console.log('schema.js was updated');
-      });
+      console.log('==  generate Yup schema ==');
+      console.log(code);
+
+      if (saveFile) {
+        return saveCode(code, saveFileName);
+      } else {
+        resolve();
+      }
     });
   });
 }
 
-export function yupSchema2FormUI(file, encoding = 'utf8') {
-  console.info('==== parse Yup schema and generate form UI ====');
+export function yupSchema2AntDesignForm(
+  filename,
+  saveFile = false,
+  saveFileName = 'form.jsx',
+) {
+  return new Promise((resolve) => {
+    console.info(
+      '==== parse Yup schema and generate Ant-Design form code ====',
+    );
 
-  parseYupSchema(file, encoding).then((schema) => {
-    console.log(schema);
-    const code = generateFormUI(schema);
-    console.log(code);
+    return readFile(filename).then((content) => {
+      const description = parseYupSchema(content);
+      const code = generateAntDesignForm(description);
+
+      console.log('==  generate form ==');
+      console.log(code);
+
+      if (saveFile) {
+        return saveCode(code, saveFileName);
+      } else {
+        resolve();
+      }
+    });
   });
 }
 
-export function traverseYupSchema(file, encoding = 'utf8') {
-  fs.readFile(file, encoding, function (err, contents) {
-    if (err) {
-      console.error(err);
-      reject(err);
-      return;
-    }
-
-    const ast = parse(contents, { sourceType: 'module' });
-    if (!isNullOrUndefined(ast)) {
-      traverseYupSchemaAst(ast);
-    }
+function readFile(filename, encoding = 'utf8') {
+  return new Promise((resolve, reject) => {
+    fs.readFile(path.resolve(__dirname, filename), encoding, function (
+      err,
+      content,
+    ) {
+      if (err) {
+        console.error(err);
+        reject();
+      }
+      resolve(content);
+    });
   });
 }
 
-export function go(file, encoding = 'utf8') {
-  parseJsonMock(file, encoding).then((description) => {
-    generateYupSchema(description).then((schema) => {
-      fs.writeFile(__dirname + '/schema.js', schema, encoding, function (err) {
-        if (err) {
-          return console.error(err);
-        }
-        console.log('schema.js was updated');
-      });
+function saveCode(code, fileName, encoding = 'utf8') {
+  return new Promise((resolve, reject) => {
+    fs.writeFile(path.resolve(__dirname, fileName), code, encoding, function (
+      err,
+    ) {
+      if (!isNullOrUndefined(err)) {
+        console.error(err);
+        reject();
+      }
 
-      parseYupSchema(__dirname + '/schema.js').then((schema) => {
-        const code = generateFormUI(schema);
-
-        fs.writeFile(__dirname + '/form.jsx', code, encoding, function (err) {
-          if (err) {
-            return console.error(err);
-          }
-          console.log('form.jsx was updated');
-          console.log('done.');
-        });
-      });
+      console.log(filename + ' save done.');
+      resolve();
     });
   });
 }

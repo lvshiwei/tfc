@@ -1,86 +1,85 @@
-import fs from "fs";
-import { isNullOrUndefined } from "./lib/asserts";
-import { parse } from "@babel/parser";
-import traverse from "@babel/traverse";
-import * as t from "@babel/types";
-import { TypeDescriptor } from "./TypeDescriptor";
+import { parse } from '@babel/parser';
+import traverse from '@babel/traverse';
+import * as t from '@babel/types';
+import {
+  YupSchemaDescription,
+  YupSchemaRuleDescriptor,
+  YupSchemaRuleAttributeDescriptor,
+} from './YupSchemaDescription';
 
-export default function (file, encoding = "utf8") {
-  return new Promise((resolve, reject) => {
-    fs.readFile(file, encoding, function (err, contents) {
-      if (err) {
-        console.error("Yup schema parse error", err);
-        reject(err);
-        return;
+/**
+ * parse Yup Schema script content to make Yup Schema description
+ * @see ./YupSchemaDescription.js
+ * @param {string} text
+ */
+export default function (text) {
+  const ast = parse(text, { sourceType: 'module' });
+  const description = traverseYupSchemaAST(ast);
+
+  return description;
+}
+
+export function traverseYupSchemaAST(ast) {
+  let meetExportDefaultObjectNode = false;
+  const desc = new YupSchemaDescription();
+
+  traverse(ast, {
+    ExportDefaultDeclaration(path) {
+      const { declaration: objectNode } = path.node;
+      if (
+        t.isCallExpression(objectNode) &&
+        t.isIdentifier(objectNode.callee) &&
+        objectNode.callee.name === 'object'
+      ) {
+        meetExportDefaultObjectNode = true;
+
+        for (const property of objectNode.arguments[0].properties) {
+          const { key, value } = property;
+          const attributes = [];
+          makeRuleDescriptor(value, attributes);
+          const rule = new YupSchemaRuleDescriptor(key.name);
+          rule.attributes = attributes;
+
+          desc.rules.push(rule);
+        }
       }
+    },
+  });
 
-      const doc = parse(contents, { sourceType: "module" });
-      const schema = {};
+  if (meetExportDefaultObjectNode) {
+    console.log('done.');
 
-      const isCalleeNode = (node, name) =>
-        t.isIdentifier(node.callee, { name }) ||
-        (t.isMemberExpression(node.callee) &&
-          t.isIdentifier(node.callee.property, { name }));
+    return desc;
+  } else {
+    console.error(
+      'did not meet export default object call expression. failed!',
+    );
+  }
+}
 
-      const isRootNode = (node) => isCalleeNode(node, "object");
+function makeRuleDescriptor(value, attributes) {
+  if (t.isCallExpression(value)) {
+    const { callee } = value;
 
-      const typeVisitor = {
-        CallExpression(path) {
-          const { parentKey } = path;
-          if (parentKey === "arguments") {
-            path.skip();
-            return;
-          }
+    attributes.push(
+      new YupSchemaRuleAttributeDescriptor(
+        t.isMemberExpression(callee) ? callee.property.name : callee.name,
+        makeValues(value.arguments),
+      ),
+    );
 
-          const td = TypeDescriptor.parse(path);
-          if (!isNullOrUndefined(td)) {
-            schema[this.key].push(td);
-          } else {
-            console.error("parse error:", this.key);
-          }
-        },
-        ObjectProperty(path) {
-          path.skip();
-        },
-      };
-      const propertyVisitor = {
-        ObjectProperty(path) {
-          const { key } = path.node;
-          if (
-            key.name === "is" ||
-            key.name === "then" ||
-            key.name === "otherwise"
-          ) {
-            path.skip();
-            return;
-          }
+    if (t.isMemberExpression(callee)) {
+      makeRuleDescriptor(callee.object, attributes);
+    }
+  }
+}
 
-          schema[key.name] = [];
-
-          path.traverse(typeVisitor, { key: key.name });
-        },
-      };
-
-      const rootVisitor = {
-        ObjectExpression(path) {
-          const { parentKey, parent } = path;
-          if (parentKey === "arguments" && isRootNode(parent)) {
-            path.traverse(propertyVisitor);
-            return;
-          }
-        },
-      };
-
-      traverse(doc, {
-        CallExpression(p) {
-          const { node } = p;
-          if (isRootNode(node)) {
-            p.traverse(rootVisitor);
-          }
-        },
-      });
-
-      resolve(schema);
-    });
+function makeValues(parameters) {
+  return parameters.map((arg) => {
+    if (t.isArrayExpression(arg)) {
+      return arg.elements.map((e) => e.value);
+    } else {
+      return arg.value;
+    }
   });
 }
