@@ -1,5 +1,5 @@
 export const YUP_TYPE_STRING = 'string';
-export const YUP_TYPE_Number = 'number';
+export const YUP_TYPE_NUMBER = 'number';
 export const YUP_TYPE_BOOL = 'bool';
 export const YUP_TYPE_DATE = 'date';
 export const YUP_TYPE_ARRAY = 'array';
@@ -13,16 +13,19 @@ export const YUP_KEYWORD_TYPE_ERROR = 'typeError';
 export const YUP_TYPE_LIST = [
   YUP_TYPE_MIXED,
   YUP_TYPE_STRING,
-  YUP_TYPE_Number,
+  YUP_TYPE_NUMBER,
   YUP_TYPE_DATE,
   YUP_TYPE_ARRAY,
   YUP_TYPE_BOOL,
 ];
 
 export const YUP_TYPE_CASTORS = {
-  YUP_TYPE_MIXED: (value) => value,
-  YUP_TYPE_STRING: String,
-  YUP_TYPE_Number: Number,
-  YUP_TYPE_DATE: (value) => new Date(value),
-  YUP_TYPE_BOOL: Boolean,
+  [YUP_TYPE_MIXED]: (value) => value,
+  [YUP_TYPE_STRING]: (value) => String(value),
+  [YUP_TYPE_NUMBER]: (value) => Number(value),
+  [YUP_TYPE_DATE]: (value) => new Date(value),
+  [YUP_TYPE_BOOL]: (value) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+  },
 };

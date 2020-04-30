@@ -31,6 +31,21 @@ function _createClass(Constructor, protoProps, staticProps) {
   return Constructor;
 }
 
+function _defineProperty(obj, key, value) {
+  if (key in obj) {
+    Object.defineProperty(obj, key, {
+      value: value,
+      enumerable: true,
+      configurable: true,
+      writable: true
+    });
+  } else {
+    obj[key] = value;
+  }
+
+  return obj;
+}
+
 function _slicedToArray(arr, i) {
   return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray(arr, i) || _nonIterableRest();
 }
@@ -161,8 +176,10 @@ var isFunction = function isFunction(v) {
   return typeof v === "function";
 };
 
+var _YUP_TYPE_CASTORS;
+
 var YUP_TYPE_STRING = 'string';
-var YUP_TYPE_Number = 'number';
+var YUP_TYPE_NUMBER = 'number';
 var YUP_TYPE_BOOL = 'bool';
 var YUP_TYPE_DATE = 'date';
 var YUP_TYPE_ARRAY = 'array';
@@ -173,21 +190,22 @@ var YUP_KEYWORD_LABEL = 'label';
  * YUP合法的指令集
  */
 
-var YUP_TYPE_LIST = [YUP_TYPE_MIXED, YUP_TYPE_STRING, YUP_TYPE_Number, YUP_TYPE_DATE, YUP_TYPE_ARRAY, YUP_TYPE_BOOL];
-var YUP_TYPE_CASTORS = {
-  YUP_TYPE_MIXED: function YUP_TYPE_MIXED(value) {
-    return value;
-  },
-  YUP_TYPE_STRING: String,
-  YUP_TYPE_Number: Number,
-  YUP_TYPE_DATE: function YUP_TYPE_DATE(value) {
-    return new Date(value);
-  },
-  YUP_TYPE_BOOL: Boolean
-};
+var YUP_TYPE_LIST = [YUP_TYPE_MIXED, YUP_TYPE_STRING, YUP_TYPE_NUMBER, YUP_TYPE_DATE, YUP_TYPE_ARRAY, YUP_TYPE_BOOL];
+var YUP_TYPE_CASTORS = (_YUP_TYPE_CASTORS = {}, _defineProperty(_YUP_TYPE_CASTORS, YUP_TYPE_MIXED, function (value) {
+  return value;
+}), _defineProperty(_YUP_TYPE_CASTORS, YUP_TYPE_STRING, function (value) {
+  return String(value);
+}), _defineProperty(_YUP_TYPE_CASTORS, YUP_TYPE_NUMBER, function (value) {
+  return Number(value);
+}), _defineProperty(_YUP_TYPE_CASTORS, YUP_TYPE_DATE, function (value) {
+  return new Date(value);
+}), _defineProperty(_YUP_TYPE_CASTORS, YUP_TYPE_BOOL, function (value) {
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+}), _YUP_TYPE_CASTORS);
 
 /**
- * Json Mock 描述文档
+ * Json Mock Description object
  */
 
 var JsonMockDescription = function JsonMockDescription() {
@@ -196,7 +214,7 @@ var JsonMockDescription = function JsonMockDescription() {
   this.properties = [];
 };
 /**
- * Json Mock 字段属性描述
+ * Json Mock description object property
  */
 
 var JsonMockPropertyDescriptor = function JsonMockPropertyDescriptor(key, value) {
@@ -210,7 +228,13 @@ var JsonMockPropertyDescriptor = function JsonMockPropertyDescriptor(key, value)
   this.annotations = annotations;
 };
 /**
- * Json Mock 申明指令
+ * Json Mock Object property annotation.
+ * e.g.
+ * {
+ *  @string // this word means the field data type is a string.
+ *  @max 20, dont make a so long text to Œname
+ *  name: "Jim Green"
+ * }
  */
 
 var JsonMockPropertyAnnotation = /*#__PURE__*/function () {
@@ -225,15 +249,18 @@ var JsonMockPropertyAnnotation = /*#__PURE__*/function () {
   _createClass(JsonMockPropertyAnnotation, [{
     key: "getParameters",
     value: function getParameters() {
+      var _this = this;
+
       if (isNotEmptyString(this.body)) {
         var array = this.body.split(',').map(function (s) {
           return s.trim();
         }).filter(isNotEmptyString);
         return array.map(function (item) {
           var type = detectDateType(item);
-          var castor = YUP_TYPE_CASTORS[type];
-          var value = isFunction(castor) ? castor(item) : item;
           var raw = item;
+          var cast = YUP_TYPE_CASTORS[type];
+          var value = isFunction(cast) ? cast(item) : item;
+          !isFunction(cast) && console.log('no caster', _this.method, type, raw);
           return new JsonMockPropertyAnnotationParameter(type, raw, value);
         });
       }
@@ -260,7 +287,7 @@ var JsonMockPropertyAnnotationParameter = /*#__PURE__*/function () {
 
     this.type = type;
     this.raw = raw;
-    this.value = value || detectDateType(raw);
+    this.value = value;
   }
 
   _createClass(JsonMockPropertyAnnotationParameter, [{
@@ -279,32 +306,34 @@ var JsonMockPropertyAnnotationParameter = /*#__PURE__*/function () {
 }();
 
 function detectDateType(value) {
-  if (typeof value !== 'string') {
-    return value;
-  }
-
   var b = /^(true|false)$/i;
   var d = /^[0-9]?$/;
   var f = /^[1-9]d*.d*|0.d*[1-9]d*$/;
   var t = /^(?:(?!0000)[0-9]{4}([-/.]?)(?:(?:0?[1-9]|1[0-2])\1(?:0?[1-9]|1[0-9]|2[0-8])|(?:0?[13-9]|1[0-2])\1(?:29|30)|(?:0?[13578]|1[02])\1(?:31))|(?:[0-9]{2}(?:0[48]|[2468][048]|[13579][26])|(?:0[48]|[2468][048]|[13579][26])00)([-/.]?)0?2\2(?:29))$/;
 
   if (b.test(value)) {
-    return Boolean(value);
+    return YUP_TYPE_BOOL;
   }
 
   if (t.test(value)) {
-    return new Date(value);
+    return YUP_TYPE_DATE;
   }
 
   if (d.test(value)) {
-    return Number(value);
+    return YUP_TYPE_NUMBER;
   }
 
   if (f.test(value)) {
-    return Number(value);
+    return YUP_TYPE_NUMBER;
   }
+
+  return YUP_TYPE_STRING;
 }
 
+/**
+ * @overview prepare for generating YupSchema
+ * @author shiwei.lv
+ */
 /**
  * 检查指令是否支持
  */
@@ -316,8 +345,7 @@ function detectDateType(value) {
 
 function tidyProperty (property) {
   ensureDataType(property);
-  sortAnnotations(property);
-  preciselyAnnotationParameters(property); // debugger;
+  sortAnnotations(property); // debugger;
 }
 /**
  * ensure data type annotation of property
@@ -338,6 +366,8 @@ function ensureDataType(property) {
 
   if (!isNullOrUndefined$1(type)) {
     property.type = type;
+    property.annotations.push(new JsonMockPropertyAnnotation(type, null));
+    return;
   }
 }
 /**
@@ -357,40 +387,6 @@ function sortAnnotations(property) {
     property.annotations.push(annotation);
   }
 }
-/**
- * 参数精准化
- * @param {*} property
- */
-
-
-function preciselyAnnotationParameters(property) {
-  var _iterator = _createForOfIteratorHelper(property.annotations),
-      _step;
-
-  try {
-    for (_iterator.s(); !(_step = _iterator.n()).done;) {
-      var annotation = _step.value;
-
-      if (isNotEmptyString(annotation.body)) {
-        (function () {
-          var params = annotation.body.split(',').map(function (i) {
-            return i.trim();
-          });
-          var type = property.type;
-          annotation.parameters = params.map(function (p) {
-            var castor = YUP_TYPE_CASTORS[type];
-            var tryCastValue = isFunction(castor) ? castor(p) : null;
-            return new JsonMockPropertyAnnotationParameter(p, tryCastValue);
-          });
-        })();
-      }
-    }
-  } catch (err) {
-    _iterator.e(err);
-  } finally {
-    _iterator.f();
-  }
-}
 
 function detectDataType(value) {
   var b = /^(true|false)$/i;
@@ -399,22 +395,22 @@ function detectDataType(value) {
   var t = /^(?:(?!0000)[0-9]{4}([-/.]?)(?:(?:0?[1-9]|1[0-2])\1(?:0?[1-9]|1[0-9]|2[0-8])|(?:0?[13-9]|1[0-2])\1(?:29|30)|(?:0?[13578]|1[02])\1(?:31))|(?:[0-9]{2}(?:0[48]|[2468][048]|[13579][26])|(?:0[48]|[2468][048]|[13579][26])00)([-/.]?)0?2\2(?:29))$/;
 
   if (b.test(value)) {
-    return 'bool';
+    return '@' + YUP_TYPE_BOOL;
   }
 
   if (t.test(value)) {
-    return 'date';
+    return '@' + YUP_TYPE_DATE;
   }
 
   if (d.test(value)) {
-    return 'number';
+    return '@' + YUP_TYPE_NUMBER;
   }
 
   if (f.test(value)) {
-    return 'number';
+    return '@' + YUP_TYPE_NUMBER;
   }
 
-  return 'mixed';
+  return '@' + YUP_TYPE_STRING;
 }
 
 /**
@@ -731,16 +727,16 @@ function makeRuleArguments(annotation) {
         raw = p.raw;
 
     switch (type) {
-      case 'string':
+      case YUP_TYPE_STRING:
         return t.stringLiteral(value);
 
-      case 'number':
+      case YUP_TYPE_NUMBER:
         return t.numericLiteral(value);
 
-      case 'boolean':
+      case YUP_TYPE_BOOL:
         return t.booleanLiteral(value);
 
-      case 'date':
+      case YUP_TYPE_DATE:
         return t.newExpression(t.identifier('Date'), [t.stringLiteral(raw)]);
 
       default:

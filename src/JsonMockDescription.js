@@ -1,8 +1,16 @@
-import { YUP_TYPE_LIST, YUP_TYPE_MIXED, YUP_TYPE_CASTORS } from './constants';
+import {
+  YUP_TYPE_LIST,
+  YUP_TYPE_MIXED,
+  YUP_TYPE_CASTORS,
+  YUP_TYPE_STRING,
+  YUP_TYPE_BOOL,
+  YUP_TYPE_DATE,
+  YUP_TYPE_NUMBER,
+} from './constants';
 import { isNotEmptyString, isFunction } from './lib/asserts';
 
 /**
- * Json Mock 描述文档
+ * Json Mock Description object
  */
 export class JsonMockDescription {
   constructor() {
@@ -11,7 +19,7 @@ export class JsonMockDescription {
 }
 
 /**
- * Json Mock 字段属性描述
+ * Json Mock description object property
  */
 export class JsonMockPropertyDescriptor {
   constructor(key, value, annotations = []) {
@@ -23,7 +31,13 @@ export class JsonMockPropertyDescriptor {
 }
 
 /**
- * Json Mock 申明指令
+ * Json Mock Object property annotation.
+ * e.g.
+ * {
+ *  @string // this word means the field data type is a string.
+ *  @max 20, dont make a so long text to Œname
+ *  name: "Jim Green"
+ * }
  */
 export class JsonMockPropertyAnnotation {
   constructor(header, body) {
@@ -48,9 +62,11 @@ export class JsonMockPropertyAnnotation {
 
       return array.map((item) => {
         const type = detectDateType(item);
-        const castor = YUP_TYPE_CASTORS[type];
-        const value = isFunction(castor) ? castor(item) : item;
         const raw = item;
+        const cast = YUP_TYPE_CASTORS[type];
+        const value = isFunction(cast) ? cast(item) : item;
+
+        !isFunction(cast) && console.log('no caster', this.method, type, raw);
 
         return new JsonMockPropertyAnnotationParameter(type, raw, value);
       });
@@ -64,7 +80,7 @@ export class JsonMockPropertyAnnotationParameter {
   constructor(type, raw, value) {
     this.type = type;
     this.raw = raw;
-    this.value = value || detectDateType(raw);
+    this.value = value;
   }
 
   valueOf() {
@@ -77,25 +93,23 @@ export class JsonMockPropertyAnnotationParameter {
 }
 
 function detectDateType(value) {
-  if (typeof value !== 'string') {
-    return value;
-  }
-
   const b = /^(true|false)$/i;
   const d = /^[0-9]?$/;
   const f = /^[1-9]d*.d*|0.d*[1-9]d*$/;
   const t = /^(?:(?!0000)[0-9]{4}([-/.]?)(?:(?:0?[1-9]|1[0-2])\1(?:0?[1-9]|1[0-9]|2[0-8])|(?:0?[13-9]|1[0-2])\1(?:29|30)|(?:0?[13578]|1[02])\1(?:31))|(?:[0-9]{2}(?:0[48]|[2468][048]|[13579][26])|(?:0[48]|[2468][048]|[13579][26])00)([-/.]?)0?2\2(?:29))$/;
 
   if (b.test(value)) {
-    return Boolean(value);
+    return YUP_TYPE_BOOL;
   }
   if (t.test(value)) {
-    return new Date(value);
+    return YUP_TYPE_DATE;
   }
   if (d.test(value)) {
-    return Number(value);
+    return YUP_TYPE_NUMBER;
   }
   if (f.test(value)) {
-    return Number(value);
+    return YUP_TYPE_NUMBER;
   }
+
+  return YUP_TYPE_STRING;
 }

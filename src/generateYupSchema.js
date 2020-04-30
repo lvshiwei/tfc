@@ -1,9 +1,14 @@
 import * as t from '@babel/types';
 import generate from '@babel/generator';
-import prepareGenerateYupSchema from './tidyJsonMockDescriptor';
 import { parse } from '@babel/parser';
-import { isNotEmptyArray, isNotEmptyString } from './lib/asserts';
+import { isNotEmptyArray } from './lib/asserts';
 import { JsonMockDescription } from './JsonMockDescription';
+import {
+  YUP_TYPE_STRING,
+  YUP_TYPE_NUMBER,
+  YUP_TYPE_BOOL,
+  YUP_TYPE_DATE,
+} from './constants';
 
 const CODE_TEMPLATE = `
 /**
@@ -66,13 +71,13 @@ function makeRuleArguments(annotation) {
   return params.map((p) => {
     const { type, value, raw } = p;
     switch (type) {
-      case 'string':
+      case YUP_TYPE_STRING:
         return t.stringLiteral(value);
-      case 'number':
+      case YUP_TYPE_NUMBER:
         return t.numericLiteral(value);
-      case 'boolean':
+      case YUP_TYPE_BOOL:
         return t.booleanLiteral(value);
-      case 'date':
+      case YUP_TYPE_DATE:
         return t.newExpression(t.identifier('Date'), [t.stringLiteral(raw)]);
       default:
         return t.stringLiteral(raw);

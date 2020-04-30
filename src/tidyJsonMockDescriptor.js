@@ -3,9 +3,14 @@
  * @author shiwei.lv
  */
 
-import { isNullOrUndefined, isNotEmptyString, isFunction } from './lib/asserts';
-import { JsonMockPropertyAnnotationParameter } from './JsonMockDescription';
-import { YUP_TYPE_CASTORS } from './constants';
+import { isNullOrUndefined } from './lib/asserts';
+import { JsonMockPropertyAnnotation } from './JsonMockDescription';
+import {
+  YUP_TYPE_BOOL,
+  YUP_TYPE_DATE,
+  YUP_TYPE_NUMBER,
+  YUP_TYPE_STRING,
+} from './constants';
 
 /**
  * 检查指令是否支持
@@ -17,7 +22,6 @@ import { YUP_TYPE_CASTORS } from './constants';
 export default function (property) {
   ensureDataType(property);
   sortAnnotations(property);
-  preciselyAnnotationParameters(property);
   // debugger;
 }
 
@@ -38,6 +42,8 @@ function ensureDataType(property) {
   const type = detectDataType(property.value);
   if (!isNullOrUndefined(type)) {
     property.type = type;
+    property.annotations.push(new JsonMockPropertyAnnotation(type, null));
+    return;
   }
 }
 
@@ -55,24 +61,6 @@ function sortAnnotations(property) {
   }
 }
 
-/**
- * 参数精准化
- * @param {*} property
- */
-function preciselyAnnotationParameters(property) {
-  for (const annotation of property.annotations) {
-    if (isNotEmptyString(annotation.body)) {
-      const params = annotation.body.split(',').map((i) => i.trim());
-      const type = property.type;
-      annotation.parameters = params.map((p) => {
-        const castor = YUP_TYPE_CASTORS[type];
-        const tryCastValue = isFunction(castor) ? castor(p) : null;
-        return new JsonMockPropertyAnnotationParameter(p, tryCastValue);
-      });
-    }
-  }
-}
-
 function detectDataType(value) {
   const b = /^(true|false)$/i;
   const d = /^[0-9]?$/;
@@ -80,16 +68,16 @@ function detectDataType(value) {
   const t = /^(?:(?!0000)[0-9]{4}([-/.]?)(?:(?:0?[1-9]|1[0-2])\1(?:0?[1-9]|1[0-9]|2[0-8])|(?:0?[13-9]|1[0-2])\1(?:29|30)|(?:0?[13578]|1[02])\1(?:31))|(?:[0-9]{2}(?:0[48]|[2468][048]|[13579][26])|(?:0[48]|[2468][048]|[13579][26])00)([-/.]?)0?2\2(?:29))$/;
 
   if (b.test(value)) {
-    return 'bool';
+    return '@' + YUP_TYPE_BOOL;
   }
   if (t.test(value)) {
-    return 'date';
+    return '@' + YUP_TYPE_DATE;
   }
   if (d.test(value)) {
-    return 'number';
+    return '@' + YUP_TYPE_NUMBER;
   }
   if (f.test(value)) {
-    return 'number';
+    return '@' + YUP_TYPE_NUMBER;
   }
-  return 'mixed';
+  return '@' + YUP_TYPE_STRING;
 }
