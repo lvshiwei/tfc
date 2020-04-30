@@ -1,8 +1,8 @@
 import * as t from '@babel/types';
 import generate from '@babel/generator';
-import prepareGenerateYupSchema from './prepareGenerateYupSchema';
+import prepareGenerateYupSchema from './tidyJsonMockDescriptor';
 import { parse } from '@babel/parser';
-import { isNotEmptyArray } from './lib/asserts';
+import { isNotEmptyArray, isNotEmptyString } from './lib/asserts';
 import { JsonMockDescription } from './JsonMockDescription';
 
 const CODE_TEMPLATE = `
@@ -19,8 +19,6 @@ export default object();
  * @param {JsonMockDescription} description json mock descripton object
  */
 export default function (description) {
-  prepareGenerateYupSchema(description);
-
   const ast = parse(CODE_TEMPLATE, { sourceType: 'module' });
   const objectDeclaration = ast.program.body[1].declaration;
 
@@ -64,8 +62,9 @@ function buildChainExpression(annotations, index) {
  * 构建规则参数
  */
 function makeRuleArguments(annotation) {
-  function cast(value) {
-    const type = typeof value;
+  const params = annotation.getParameters();
+  return params.map((p) => {
+    const { type, value, raw } = p;
     switch (type) {
       case 'string':
         return t.stringLiteral(value);
@@ -73,14 +72,12 @@ function makeRuleArguments(annotation) {
         return t.numericLiteral(value);
       case 'boolean':
         return t.booleanLiteral(value);
+      case 'date':
+        return t.newExpression(t.identifier('Date'), [t.stringLiteral(raw)]);
       default:
-        return t.stringLiteral(value);
+        return t.stringLiteral(raw);
     }
-  }
-
-  return isNotEmptyArray(annotation.parameters)
-    ? annotation.parameters.map(cast)
-    : [];
+  });
 }
 
 /**

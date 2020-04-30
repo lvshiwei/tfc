@@ -11,6 +11,8 @@ import {
   JsonMockPropertyAnnotation,
 } from './JsonMockDescription';
 
+import tidyProperty from './tidyJsonMockDescriptor';
+
 /**
  * parse JSON Mock script content, generate JSON Mock Description
  * @see ./JsonMockDescription.js
@@ -29,6 +31,7 @@ export function traverseJsonMockAST(ast) {
   const propertyVisitor = {
     ObjectProperty(path) {
       const property = makeJsonMockProperty(path.node);
+      tidyProperty(property);
       description.properties.push(property);
     },
   };

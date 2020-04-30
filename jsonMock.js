@@ -15,6 +15,7 @@ export default {
   // @date
   // @required 请填写预开业日期
   // @max 2099/12/31,不能太晚
+  // @nullable
   preOpeningTime: 1586854463211,
   // 支持堂食
   // @required 请选择是否支持堂食

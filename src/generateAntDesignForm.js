@@ -8,6 +8,7 @@ import * as t from '@babel/types';
 import generate from '@babel/generator';
 import { parse } from '@babel/parser';
 import { YUP_TYPE_LIST, YUP_TYPE_DATE } from './constants';
+import { isNotEmptyString } from './lib/asserts';
 
 const CODE_TEMPLATE = `
 /**
@@ -48,6 +49,7 @@ export default function () {
 
   return <div className="form-wrapper"></div>;
 }`;
+const NEWLINE = t.jsxText('\n');
 
 export default function (description) {
   const ast = parse(CODE_TEMPLATE, { sourceType: 'module', plugins: ['jsx'] });
@@ -57,18 +59,19 @@ export default function (description) {
   );
   const divElement = returnStatement.argument;
 
-  divElement.children.push(newline);
-  const newline = t.jsxText('\n');
+  divElement.children.push(NEWLINE);
   const fields = t.jsxElement(
     t.jsxOpeningElement(t.jsxIdentifier('List'), []),
     t.jsxClosingElement(t.jsxIdentifier('List')),
-    [newline],
+    [NEWLINE],
   );
 
-  for (const rule in description.rules) {
+  for (const rule of description.rules) {
     fields.children.push(makeField(rule));
+    fields.children.push(NEWLINE);
   }
-  divElement.children.push(newline);
+  divElement.children.push(fields);
+  divElement.children.push(NEWLINE);
   const output = generate(ast, {}, CODE_TEMPLATE);
 
   return output.code;
@@ -109,15 +112,15 @@ function makeRenderClassAttribute(name) {
 }
 
 function makeDatePicker(ruleDescriptor) {
-  const { name, label, isRequired } = ruleDescriptor;
+  const { name } = ruleDescriptor;
   const picker = t.jsxIdentifier('DatePicker');
   const item = t.jsxIdentifier('List.Item');
 
   return t.jsxElement(
     t.jsxOpeningElement(picker, [
-      t.jsxAttribute(t.identifier('mode'), t.stringLiteral('date')),
+      t.jsxAttribute(t.jsxIdentifier('mode'), t.stringLiteral('date')),
       t.jsxAttribute(
-        t.identifier('onChange'),
+        t.jsxIdentifier('onChange'),
         t.jsxExpressionContainer(
           t.callExpression(t.identifier('handleSelectChange'), [
             t.stringLiteral(name),
@@ -127,23 +130,25 @@ function makeDatePicker(ruleDescriptor) {
     ]),
     t.jsxClosingElement(picker),
     [
+      NEWLINE,
       t.jsxElement(
         t.jsxOpeningElement(item, [
-          t.jsxAttribute(t.identifier('arrow'), t.stringLiteral('horizontal')),
+          t.jsxAttribute(
+            t.jsxIdentifier('arrow'),
+            t.stringLiteral('horizontal'),
+          ),
           makeRenderClassAttribute(name),
         ]),
         t.jsxClosingElement(item),
-        [
-          t.jsxText(label),
-          isRequired === true ? makeRequiredElement() : t.jsxEmptyExpression(),
-        ],
+        makeLabelAndRequired(ruleDescriptor),
       ),
+      NEWLINE,
     ],
   );
 }
 
 function makeInputItem(ruleDescriptor) {
-  const { name, label, isRequired } = ruleDescriptor;
+  const { name } = ruleDescriptor;
   const inputItem = t.jsxIdentifier('InputItem');
   return t.jsxElement(
     t.jsxOpeningElement(inputItem, [
@@ -166,9 +171,19 @@ function makeInputItem(ruleDescriptor) {
       ),
     ]),
     t.jsxClosingElement(inputItem),
-    [
-      t.jsxText(label),
-      isRequired === true ? makeRequiredElement() : t.jsxEmptyExpression(),
-    ],
+    makeLabelAndRequired(ruleDescriptor),
   );
+}
+
+function makeLabelAndRequired(ruleDescriptor) {
+  const { label, isRequired } = ruleDescriptor;
+
+  const children = [];
+  if (isNotEmptyString(label)) {
+    children.push(t.jsxText(label));
+  }
+  if (isRequired === true) {
+    children.push(makeRequiredElement());
+  }
+  return children;
 }

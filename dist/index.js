@@ -9,22 +9,6 @@ var parser = require('@babel/parser');
 var t = require('@babel/types');
 var generate = _interopDefault(require('@babel/generator'));
 
-function _typeof(obj) {
-  "@babel/helpers - typeof";
-
-  if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
-    _typeof = function (obj) {
-      return typeof obj;
-    };
-  } else {
-    _typeof = function (obj) {
-      return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
-    };
-  }
-
-  return _typeof(obj);
-}
-
 function _classCallCheck(instance, Constructor) {
   if (!(instance instanceof Constructor)) {
     throw new TypeError("Cannot call a class as a function");
@@ -173,6 +157,34 @@ var isNotEmptyArray = function isNotEmptyArray(v) {
 var isNotEmptyString = function isNotEmptyString(v) {
   return typeof v === "string" && v.length > 0;
 };
+var isFunction = function isFunction(v) {
+  return typeof v === "function";
+};
+
+var YUP_TYPE_STRING = 'string';
+var YUP_TYPE_Number = 'number';
+var YUP_TYPE_BOOL = 'bool';
+var YUP_TYPE_DATE = 'date';
+var YUP_TYPE_ARRAY = 'array';
+var YUP_TYPE_MIXED = 'mixed';
+var YUP_KEYWORD_REQUIRED = 'required';
+var YUP_KEYWORD_LABEL = 'label';
+/**
+ * YUP合法的指令集
+ */
+
+var YUP_TYPE_LIST = [YUP_TYPE_MIXED, YUP_TYPE_STRING, YUP_TYPE_Number, YUP_TYPE_DATE, YUP_TYPE_ARRAY, YUP_TYPE_BOOL];
+var YUP_TYPE_CASTORS = {
+  YUP_TYPE_MIXED: function YUP_TYPE_MIXED(value) {
+    return value;
+  },
+  YUP_TYPE_STRING: String,
+  YUP_TYPE_Number: Number,
+  YUP_TYPE_DATE: function YUP_TYPE_DATE(value) {
+    return new Date(value);
+  },
+  YUP_TYPE_BOOL: Boolean
+};
 
 /**
  * Json Mock 描述文档
@@ -194,6 +206,7 @@ var JsonMockPropertyDescriptor = function JsonMockPropertyDescriptor(key, value)
 
   this.key = key;
   this.value = value;
+  this.type = YUP_TYPE_MIXED;
   this.annotations = annotations;
 };
 /**
@@ -205,10 +218,34 @@ var JsonMockPropertyAnnotation = /*#__PURE__*/function () {
     _classCallCheck(this, JsonMockPropertyAnnotation);
 
     this.header = header;
-    this.body = body; // this.parameters = [];
+    this.body = body;
+    this.isDateTypeAnnotation = YUP_TYPE_LIST.includes(this.method);
   }
 
   _createClass(JsonMockPropertyAnnotation, [{
+    key: "getParameters",
+    value: function getParameters() {
+      if (isNotEmptyString(this.body)) {
+        var array = this.body.split(',').map(function (s) {
+          return s.trim();
+        }).filter(isNotEmptyString);
+        return array.map(function (item) {
+          var type = detectDateType(item);
+          var castor = YUP_TYPE_CASTORS[type];
+          var value = isFunction(castor) ? castor(item) : item;
+          var raw = item;
+          return new JsonMockPropertyAnnotationParameter(type, raw, value);
+        });
+      }
+
+      return [];
+    }
+  }, {
+    key: "prefix",
+    get: function get() {
+      return this.header[0];
+    }
+  }, {
     key: "method",
     get: function get() {
       return this.header.substring(1);
@@ -217,6 +254,168 @@ var JsonMockPropertyAnnotation = /*#__PURE__*/function () {
 
   return JsonMockPropertyAnnotation;
 }();
+var JsonMockPropertyAnnotationParameter = /*#__PURE__*/function () {
+  function JsonMockPropertyAnnotationParameter(type, raw, value) {
+    _classCallCheck(this, JsonMockPropertyAnnotationParameter);
+
+    this.type = type;
+    this.raw = raw;
+    this.value = value || detectDateType(raw);
+  }
+
+  _createClass(JsonMockPropertyAnnotationParameter, [{
+    key: "valueOf",
+    value: function valueOf() {
+      return this.value;
+    }
+  }, {
+    key: "toString",
+    value: function toString() {
+      return this.raw;
+    }
+  }]);
+
+  return JsonMockPropertyAnnotationParameter;
+}();
+
+function detectDateType(value) {
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  var b = /^(true|false)$/i;
+  var d = /^[0-9]?$/;
+  var f = /^[1-9]d*.d*|0.d*[1-9]d*$/;
+  var t = /^(?:(?!0000)[0-9]{4}([-/.]?)(?:(?:0?[1-9]|1[0-2])\1(?:0?[1-9]|1[0-9]|2[0-8])|(?:0?[13-9]|1[0-2])\1(?:29|30)|(?:0?[13578]|1[02])\1(?:31))|(?:[0-9]{2}(?:0[48]|[2468][048]|[13579][26])|(?:0[48]|[2468][048]|[13579][26])00)([-/.]?)0?2\2(?:29))$/;
+
+  if (b.test(value)) {
+    return Boolean(value);
+  }
+
+  if (t.test(value)) {
+    return new Date(value);
+  }
+
+  if (d.test(value)) {
+    return Number(value);
+  }
+
+  if (f.test(value)) {
+    return Number(value);
+  }
+}
+
+/**
+ * 检查指令是否支持
+ */
+
+/**
+ * prepare for generating YupSchema
+ * @param {JsonMockDescription} jsonMockDescription description object
+ */
+
+function tidyProperty (property) {
+  ensureDataType(property);
+  sortAnnotations(property);
+  preciselyAnnotationParameters(property); // debugger;
+}
+/**
+ * ensure data type annotation of property
+ * @param {*} property
+ */
+
+function ensureDataType(property) {
+  var dataTypeAnnotation = property.annotations.find(function (a) {
+    return a.isDateTypeAnnotation;
+  });
+
+  if (!isNullOrUndefined$1(dataTypeAnnotation)) {
+    property.type = dataTypeAnnotation.method;
+    return;
+  }
+
+  var type = detectDataType(property.value);
+
+  if (!isNullOrUndefined$1(type)) {
+    property.type = type;
+  }
+}
+/**
+ * 排序
+ */
+
+
+function sortAnnotations(property) {
+  property.annotations.reverse();
+  var index = property.annotations.findIndex(function (a) {
+    return a.isDateTypeAnnotation;
+  });
+
+  if (index > -1) {
+    var annotation = property.annotations[index];
+    property.annotations.splice(index, 1);
+    property.annotations.push(annotation);
+  }
+}
+/**
+ * 参数精准化
+ * @param {*} property
+ */
+
+
+function preciselyAnnotationParameters(property) {
+  var _iterator = _createForOfIteratorHelper(property.annotations),
+      _step;
+
+  try {
+    for (_iterator.s(); !(_step = _iterator.n()).done;) {
+      var annotation = _step.value;
+
+      if (isNotEmptyString(annotation.body)) {
+        (function () {
+          var params = annotation.body.split(',').map(function (i) {
+            return i.trim();
+          });
+          var type = property.type;
+          annotation.parameters = params.map(function (p) {
+            var castor = YUP_TYPE_CASTORS[type];
+            var tryCastValue = isFunction(castor) ? castor(p) : null;
+            return new JsonMockPropertyAnnotationParameter(p, tryCastValue);
+          });
+        })();
+      }
+    }
+  } catch (err) {
+    _iterator.e(err);
+  } finally {
+    _iterator.f();
+  }
+}
+
+function detectDataType(value) {
+  var b = /^(true|false)$/i;
+  var d = /^[0-9]?$/;
+  var f = /^[1-9]d*.d*|0.d*[1-9]d*$/;
+  var t = /^(?:(?!0000)[0-9]{4}([-/.]?)(?:(?:0?[1-9]|1[0-2])\1(?:0?[1-9]|1[0-9]|2[0-8])|(?:0?[13-9]|1[0-2])\1(?:29|30)|(?:0?[13578]|1[02])\1(?:31))|(?:[0-9]{2}(?:0[48]|[2468][048]|[13579][26])|(?:0[48]|[2468][048]|[13579][26])00)([-/.]?)0?2\2(?:29))$/;
+
+  if (b.test(value)) {
+    return 'bool';
+  }
+
+  if (t.test(value)) {
+    return 'date';
+  }
+
+  if (d.test(value)) {
+    return 'number';
+  }
+
+  if (f.test(value)) {
+    return 'number';
+  }
+
+  return 'mixed';
+}
 
 /**
  * parse JSON Mock script content, generate JSON Mock Description
@@ -236,6 +435,7 @@ function traverseJsonMockAST(ast) {
   var propertyVisitor = {
     ObjectProperty: function ObjectProperty(path) {
       var property = makeJsonMockProperty(path.node);
+      tidyProperty(property);
       description.properties.push(property);
     }
   };
@@ -302,20 +502,6 @@ function makeAnnotation(key, leadingComment) {
     return new JsonMockPropertyAnnotation('@label', key);
   }
 }
-
-var YUP_TYPE_STRING = 'string';
-var YUP_TYPE_Number = 'number';
-var YUP_TYPE_BOOL = 'bool';
-var YUP_TYPE_DATE = 'date';
-var YUP_TYPE_ARRAY = 'array';
-var YUP_TYPE_MIXED = 'mixed';
-var YUP_KEYWORD_REQUIRED = 'required';
-var YUP_KEYWORD_LABEL = 'label';
-/**
- * YUP合法的指令集
- */
-
-var YUP_TYPE_LIST = [YUP_TYPE_MIXED, YUP_TYPE_STRING, YUP_TYPE_Number, YUP_TYPE_DATE, YUP_TYPE_ARRAY, YUP_TYPE_BOOL];
 
 var YupSchemaDescription = function YupSchemaDescription() {
   _classCallCheck(this, YupSchemaDescription);
@@ -482,134 +668,6 @@ function makeValues(parameters) {
   });
 }
 
-/**
- * 检查指令是否支持
- */
-
-var isSupported = function isSupported(d) {
-  return YUP_TYPE_LIST.includes(d);
-};
-/**
- * prepare for generating YupSchema
- * @param {JsonMockDescription} jsonMockDescription description object
- */
-
-
-function prepareGenerateYupSchema (jsonMockDescription) {
-  console.log('preparing ....');
-
-  var _iterator = _createForOfIteratorHelper(jsonMockDescription.properties),
-      _step;
-
-  try {
-    for (_iterator.s(); !(_step = _iterator.n()).done;) {
-      var property = _step.value;
-      ensureKeyAnnotation(property);
-      sortAnnotations(property);
-      preciselyAnnotationParameters(property);
-    } // debugger;
-
-  } catch (err) {
-    _iterator.e(err);
-  } finally {
-    _iterator.f();
-  }
-}
-
-function ensureKeyAnnotation(property) {
-  var found = property.annotations.find(function (a) {
-    return isSupported(a.method);
-  });
-
-  if (!isNullOrUndefined$1(found)) {
-    return found.method;
-  }
-
-  var type = detect(property.value);
-  var annotation = new JsonMockPropertyAnnotation(type);
-  property.annotations.push(annotation);
-
-  function detect(value) {
-    var b = /^(true|false)$/i;
-    var d = /^[0-9]?$/;
-    var f = /^[1-9]d*.d*|0.d*[1-9]d*$/;
-    if (b.test(value)) return '@bool';
-    if (d.test(value)) return '@number';
-    if (f.test(value)) return '@number';
-    return '@string';
-  }
-
-  return annotation.method;
-}
-/**
- * 排序
- */
-
-
-function sortAnnotations(property) {
-  var index = property.annotations.findIndex(function (a) {
-    return isSupported(a.method);
-  });
-
-  if (index > -1) {
-    var annotation = property.annotations[index];
-    property.annotations.splice(index, 1);
-    property.annotations.push(annotation);
-  }
-}
-/**
- * 参数精准化
- * @param {*} property
- */
-
-
-function preciselyAnnotationParameters(property) {
-  function cast(value) {
-    var b = /^(true|false)$/i;
-    var d = /^[0-9]?$/;
-    var f = /^[1-9]d*.d*|0.d*[1-9]d*$/;
-    var t = /^[1-9]\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$/;
-
-    if (b.test(value)) {
-      return Boolean(value);
-    }
-
-    if (t.test(value)) {
-      return new Date(value);
-    }
-
-    if (d.test(value)) {
-      return Number(value);
-    }
-
-    if (f.test(value)) {
-      return Number(value);
-    }
-
-    return String(value);
-  }
-
-  var _iterator2 = _createForOfIteratorHelper(property.annotations),
-      _step2;
-
-  try {
-    for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
-      var annotation = _step2.value;
-      var params = annotation.body;
-
-      if (isNotEmptyString(params)) {
-        annotation.parameters = params.split(',').map(function (s) {
-          return cast(s.trim());
-        });
-      }
-    }
-  } catch (err) {
-    _iterator2.e(err);
-  } finally {
-    _iterator2.f();
-  }
-}
-
 var CODE_TEMPLATE = "\n/**\n* @overview A Yup schema generated by tfc.\n*/\nimport { object, mixed, date, string, number, array } from \"yup\";\n\nexport default object();\n";
 /**
  * generate yup schema code
@@ -618,7 +676,6 @@ var CODE_TEMPLATE = "\n/**\n* @overview A Yup schema generated by tfc.\n*/\nimpo
  */
 
 function generateYupSchema (description) {
-  prepareGenerateYupSchema(description);
   var ast = parser.parse(CODE_TEMPLATE, {
     sourceType: 'module'
   });
@@ -667,8 +724,11 @@ function buildChainExpression(annotations, index) {
 
 
 function makeRuleArguments(annotation) {
-  function cast(value) {
-    var type = _typeof(value);
+  var params = annotation.getParameters();
+  return params.map(function (p) {
+    var type = p.type,
+        value = p.value,
+        raw = p.raw;
 
     switch (type) {
       case 'string':
@@ -680,12 +740,13 @@ function makeRuleArguments(annotation) {
       case 'boolean':
         return t.booleanLiteral(value);
 
-      default:
-        return t.stringLiteral(value);
-    }
-  }
+      case 'date':
+        return t.newExpression(t.identifier('Date'), [t.stringLiteral(raw)]);
 
-  return isNotEmptyArray(annotation.parameters) ? annotation.parameters.map(cast) : [];
+      default:
+        return t.stringLiteral(raw);
+    }
+  });
 }
 /**
  * 将unicode字符转化成可读的汉字
@@ -701,12 +762,8 @@ function ensureReadableText(unicodeText) {
   return decodeURIComponent(dest);
 }
 
-/**
- * @overview generate form code from schema description object
- * @see ./SchemaDescription.js
- * @author shiwei.lv
- */
 var CODE_TEMPLATE$1 = "\n/**\n * @overview A form component generated by tfc.\n * @author your.name@corp.com\n */\nimport React from \"react\";\nimport classnames from \"classnames\";\nimport schema from \"./schema\";\nimport { useModel, useValidation } from \"./hooks\";\nimport { List, InputItem, Picker, DatePicker } from \"antd-mobile\";\n\n/**\n * Say something to avoid warnning from eslint\n */\nexport default function () {\n  const [model, setModel] = useModel({ preOpeningTime: new Date() });\n  const [validate, errors] = useValidation(schema);\n\n  const handleSubmit = () =>\n    validate(model)\n      .then(() => alert(\"Amazing!!\"))\n      .catch(console.error);\n\n  const handleChangeInput = (name) => (value) => setModel(name, value);\n  const handleLeaveInput = (name) => () => validate(name, model[name]);\n  const handleChangeSelect = (name) => (value) => {\n    setModel(name, value);\n    validate(name, value);\n  };\n  const renderClassName = (name, properties) =>\n    classnames(...(properties || []), {\n      error: Array.isArray(errors) && errors.some((e) => e.path === name),\n      hasValue: !(model[name] === null || typeof model[name] === \"undefined\"),\n    });\n\n  const Required = () => <i className=\"required\">*</i>;\n\n  return <div className=\"form-wrapper\"></div>;\n}";
+var NEWLINE = t.jsxText('\n');
 function generateAntDesignForm (description) {
   var ast = parser.parse(CODE_TEMPLATE$1, {
     sourceType: 'module',
@@ -715,15 +772,26 @@ function generateAntDesignForm (description) {
   var exportDefault = ast.program.body.find(t.isExportDefaultDeclaration);
   var returnStatement = exportDefault.declaration.body.body.find(t.isReturnStatement);
   var divElement = returnStatement.argument;
-  divElement.children.push(newline);
-  var newline = t.jsxText('\n');
-  var fields = t.jsxElement(t.jsxOpeningElement(t.jsxIdentifier('List'), []), t.jsxClosingElement(t.jsxIdentifier('List')), [newline]);
+  divElement.children.push(NEWLINE);
+  var fields = t.jsxElement(t.jsxOpeningElement(t.jsxIdentifier('List'), []), t.jsxClosingElement(t.jsxIdentifier('List')), [NEWLINE]);
 
-  for (var rule in description.rules) {
-    fields.children.push(makeField(rule));
+  var _iterator = _createForOfIteratorHelper(description.rules),
+      _step;
+
+  try {
+    for (_iterator.s(); !(_step = _iterator.n()).done;) {
+      var rule = _step.value;
+      fields.children.push(makeField(rule));
+      fields.children.push(NEWLINE);
+    }
+  } catch (err) {
+    _iterator.e(err);
+  } finally {
+    _iterator.f();
   }
 
-  divElement.children.push(newline);
+  divElement.children.push(fields);
+  divElement.children.push(NEWLINE);
   var output = generate(ast, {}, CODE_TEMPLATE$1);
   return output.code;
 }
@@ -751,20 +819,32 @@ function makeRenderClassAttribute(name) {
 }
 
 function makeDatePicker(ruleDescriptor) {
-  var name = ruleDescriptor.name,
-      label = ruleDescriptor.label,
-      isRequired = ruleDescriptor.isRequired;
+  var name = ruleDescriptor.name;
   var picker = t.jsxIdentifier('DatePicker');
   var item = t.jsxIdentifier('List.Item');
-  return t.jsxElement(t.jsxOpeningElement(picker, [t.jsxAttribute(t.identifier('mode'), t.stringLiteral('date')), t.jsxAttribute(t.identifier('onChange'), t.jsxExpressionContainer(t.callExpression(t.identifier('handleSelectChange'), [t.stringLiteral(name)])))]), t.jsxClosingElement(picker), [t.jsxElement(t.jsxOpeningElement(item, [t.jsxAttribute(t.identifier('arrow'), t.stringLiteral('horizontal')), makeRenderClassAttribute(name)]), t.jsxClosingElement(item), [t.jsxText(label), isRequired === true ? makeRequiredElement() : t.jsxEmptyExpression()])]);
+  return t.jsxElement(t.jsxOpeningElement(picker, [t.jsxAttribute(t.jsxIdentifier('mode'), t.stringLiteral('date')), t.jsxAttribute(t.jsxIdentifier('onChange'), t.jsxExpressionContainer(t.callExpression(t.identifier('handleSelectChange'), [t.stringLiteral(name)])))]), t.jsxClosingElement(picker), [NEWLINE, t.jsxElement(t.jsxOpeningElement(item, [t.jsxAttribute(t.jsxIdentifier('arrow'), t.stringLiteral('horizontal')), makeRenderClassAttribute(name)]), t.jsxClosingElement(item), makeLabelAndRequired(ruleDescriptor)), NEWLINE]);
 }
 
 function makeInputItem(ruleDescriptor) {
-  var name = ruleDescriptor.name,
-      label = ruleDescriptor.label,
-      isRequired = ruleDescriptor.isRequired;
+  var name = ruleDescriptor.name;
   var inputItem = t.jsxIdentifier('InputItem');
-  return t.jsxElement(t.jsxOpeningElement(inputItem, [makeRenderClassAttribute(name), t.jsxAttribute(t.jsxIdentifier('onChange'), t.jsxExpressionContainer(t.callExpression(t.identifier('handleInputChange'), [t.stringLiteral(name)]))), t.jsxAttribute(t.jsxIdentifier('onBlur'), t.jsxExpressionContainer(t.callExpression(t.identifier('handleLeaveInput'), [t.stringLiteral(name)])))]), t.jsxClosingElement(inputItem), [t.jsxText(label), isRequired === true ? makeRequiredElement() : t.jsxEmptyExpression()]);
+  return t.jsxElement(t.jsxOpeningElement(inputItem, [makeRenderClassAttribute(name), t.jsxAttribute(t.jsxIdentifier('onChange'), t.jsxExpressionContainer(t.callExpression(t.identifier('handleInputChange'), [t.stringLiteral(name)]))), t.jsxAttribute(t.jsxIdentifier('onBlur'), t.jsxExpressionContainer(t.callExpression(t.identifier('handleLeaveInput'), [t.stringLiteral(name)])))]), t.jsxClosingElement(inputItem), makeLabelAndRequired(ruleDescriptor));
+}
+
+function makeLabelAndRequired(ruleDescriptor) {
+  var label = ruleDescriptor.label,
+      isRequired = ruleDescriptor.isRequired;
+  var children = [];
+
+  if (isNotEmptyString(label)) {
+    children.push(t.jsxText(label));
+  }
+
+  if (isRequired === true) {
+    children.push(makeRequiredElement());
+  }
+
+  return children;
 }
 
 function jsonMock2YupSchema(filename) {
