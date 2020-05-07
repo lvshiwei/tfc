@@ -4,6 +4,7 @@ import parseJsonMock from './parseJsonMock';
 import parseYupSchema from './parseYupSchema';
 import generateYupSchema from './generateYupSchema';
 import generateAntDesignForm from './generateAntDesignForm';
+import { isNullOrUndefined } from './lib/asserts';
 
 export function jsonMock2YupSchema(
   filename,
@@ -15,19 +16,21 @@ export function jsonMock2YupSchema(
       '==== parse JSON mock script file and generate Yup Schema ====',
     );
 
-    return readFile(filename).then((content) => {
-      const description = parseJsonMock(content);
-      const code = generateYupSchema(description);
+    return readFile(filename)
+      .then((content) => {
+        const description = parseJsonMock(content);
+        const code = generateYupSchema(description);
 
-      console.log('==  generate Yup schema ==');
-      console.log(code);
+        console.log('==  generate Yup schema ==');
+        console.log(code);
 
-      if (saveFile) {
-        return saveCode(code, saveFileName);
-      } else {
-        resolve();
-      }
-    });
+        if (saveFile) {
+          return saveCode(code, saveFileName).then(resolve).catch(reject);
+        } else {
+          resolve();
+        }
+      })
+      .catch(reject);
   });
 }
 
@@ -36,24 +39,26 @@ export function yupSchema2AntDesignForm(
   saveFile = false,
   saveFileName = 'form.jsx',
 ) {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     console.info(
       '==== parse Yup schema and generate Ant-Design form code ====',
     );
 
-    return readFile(filename).then((content) => {
-      const description = parseYupSchema(content);
-      const code = generateAntDesignForm(description);
+    return readFile(filename)
+      .then((content) => {
+        const description = parseYupSchema(content);
+        const code = generateAntDesignForm(description);
 
-      console.log('==  generate form ==');
-      console.log(code);
+        console.log('==  generate form ==');
+        console.log(code);
 
-      if (saveFile) {
-        return saveCode(code, saveFileName);
-      } else {
-        resolve();
-      }
-    });
+        if (saveFile) {
+          return saveCode(code, saveFileName).then(resolve).catch(reject);
+        } else {
+          resolve();
+        }
+      })
+      .catch(reject);
   });
 }
 
@@ -82,7 +87,7 @@ function saveCode(code, fileName, encoding = 'utf8') {
         reject();
       }
 
-      console.log(filename + ' save done.');
+      console.log(fileName + ' save done.');
       resolve();
     });
   });

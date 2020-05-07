@@ -163,7 +163,7 @@ var isNull = function isNull(v) {
 var isUndefined = function isUndefined(v) {
   return typeof v === "undefined";
 };
-var isNullOrUndefined$1 = function isNullOrUndefined(v) {
+var isNullOrUndefined = function isNullOrUndefined(v) {
   return isNull(v) || isUndefined(v);
 };
 var isNotEmptyArray = function isNotEmptyArray(v) {
@@ -357,14 +357,14 @@ function ensureDataType(property) {
     return a.isDateTypeAnnotation;
   });
 
-  if (!isNullOrUndefined$1(dataTypeAnnotation)) {
+  if (!isNullOrUndefined(dataTypeAnnotation)) {
     property.type = dataTypeAnnotation.method;
     return;
   }
 
   var type = detectDataType(property.value);
 
-  if (!isNullOrUndefined$1(type)) {
+  if (!isNullOrUndefined(type)) {
     property.type = type;
     property.annotations.push(new JsonMockPropertyAnnotation(type, null));
     return;
@@ -458,7 +458,7 @@ function makeJsonMockProperty(astNode) {
   var anotations = leadingComments.map(function (comment) {
     return makeAnnotation(key.name, comment);
   }).filter(function (i) {
-    return !isNullOrUndefined$1(i);
+    return !isNullOrUndefined(i);
   });
   return new JsonMockPropertyDescriptor(key.name, value.value, anotations);
 }
@@ -520,7 +520,7 @@ var YupSchemaRuleDescriptor = /*#__PURE__*/function () {
   _createClass(YupSchemaRuleDescriptor, [{
     key: "isRequired",
     value: function isRequired() {
-      if (!isNullOrUndefined$1(this._isRequired)) {
+      if (!isNullOrUndefined(this._isRequired)) {
         return this._isRequired;
       }
 
@@ -544,7 +544,7 @@ var YupSchemaRuleDescriptor = /*#__PURE__*/function () {
   }, {
     key: "label",
     get: function get() {
-      if (!isNullOrUndefined$1(this._label)) {
+      if (!isNullOrUndefined(this._label)) {
         return this._label;
       }
 
@@ -552,7 +552,7 @@ var YupSchemaRuleDescriptor = /*#__PURE__*/function () {
         return attr.key === YUP_KEYWORD_LABEL;
       });
 
-      if (!isNullOrUndefined$1(found)) {
+      if (!isNullOrUndefined(found)) {
         this._label = found.values[0];
         return this._label;
       }
@@ -560,7 +560,7 @@ var YupSchemaRuleDescriptor = /*#__PURE__*/function () {
   }, {
     key: "dataType",
     get: function get() {
-      if (!isNullOrUndefined$1(this._dataType)) {
+      if (!isNullOrUndefined(this._dataType)) {
         return this._dataType;
       }
 
@@ -568,7 +568,7 @@ var YupSchemaRuleDescriptor = /*#__PURE__*/function () {
         return attr.isDataTypeAttribute === true;
       });
 
-      if (!isNullOrUndefined$1(found)) {
+      if (!isNullOrUndefined(found)) {
         this._dataType = found.key;
         return found.key;
       }
@@ -855,17 +855,17 @@ function jsonMock2YupSchema(filename) {
       console.log(code);
 
       if (saveFile) {
-        return saveCode(code, saveFileName);
+        return saveCode(code, saveFileName).then(resolve)["catch"](reject);
       } else {
         resolve();
       }
-    });
+    })["catch"](reject);
   });
 }
 function yupSchema2AntDesignForm(filename) {
   var saveFile = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
   var saveFileName = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'form.jsx';
-  return new Promise(function (resolve) {
+  return new Promise(function (resolve, reject) {
     console.info('==== parse Yup schema and generate Ant-Design form code ====');
     return readFile(filename).then(function (content) {
       var description = parseYupSchema(content);
@@ -874,11 +874,11 @@ function yupSchema2AntDesignForm(filename) {
       console.log(code);
 
       if (saveFile) {
-        return saveCode(code, saveFileName);
+        return saveCode(code, saveFileName).then(resolve)["catch"](reject);
       } else {
         resolve();
       }
-    });
+    })["catch"](reject);
   });
 }
 
@@ -905,7 +905,7 @@ function saveCode(code, fileName) {
         reject();
       }
 
-      console.log(filename + ' save done.');
+      console.log(fileName + ' save done.');
       resolve();
     });
   });

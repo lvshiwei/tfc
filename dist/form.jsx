@@ -6,7 +6,7 @@ import React from "react";
 import classnames from "classnames";
 import schema from "./schema";
 import { useModel, useValidation } from "./hooks";
-import { Card, List, InputItem, Picker, DatePicker } from "antd-mobile";
+import { List, InputItem, Picker, DatePicker } from "antd-mobile";
 /**
  * Say something to avoid warnning from eslint
  */
@@ -35,16 +35,16 @@ export default function () {
 
   const Required = () => <i className="required">*</i>;
 
-  return <div>
+  return <div className="form-wrapper">
     <List>
-      <InputItem name="expandProjectNo" className={renderClassName("expandProjectNo")} onChange={handleChangeInput("expandProjectNo")} onBlur={handleLeaveInput("expandProjectNo")}>expandProjectNo</InputItem>
-      <InputItem name="shopLocation" className={renderClassName("shopLocation")} onChange={handleChangeInput("shopLocation")} onBlur={handleLeaveInput("shopLocation")}>门店地址</InputItem>
-      <InputItem name="preLongitude" className={renderClassName("preLongitude")} onChange={handleChangeInput("preLongitude")} onBlur={handleLeaveInput("preLongitude")}>经度</InputItem>
-      <InputItem name="preLatitude" className={renderClassName("preLatitude")} onChange={handleChangeInput("preLatitude")} onBlur={handleLeaveInput("preLatitude")}>纬度</InputItem>
-      <InputItem name="preOpeningTime" className={renderClassName("preOpeningTime")} onChange={handleChangeInput("preOpeningTime")}>预开业时间<Required /></InputItem>
-      <InputItem name="isSupportCanteen" className={renderClassName("isSupportCanteen")} onChange={handleChangeInput("isSupportCanteen")} onBlur={handleLeaveInput("isSupportCanteen")}>支持堂食<Required /></InputItem>
-      <InputItem name="seatsNumber" className={renderClassName("seatsNumber")} onChange={handleChangeInput("seatsNumber")} onBlur={handleLeaveInput("seatsNumber")}>座位数<Required /></InputItem>
-      <InputItem name="active" className={renderClassName("active")} onChange={handleChangeInput("active")}>生效的<Required /></InputItem>
+      <InputItem className={renderClassName("location")} onChange={handleInputChange("location")} onBlur={handleLeaveInput("location")}>地址</InputItem>
+      <InputItem className={renderClassName("longitude")} onChange={handleInputChange("longitude")} onBlur={handleLeaveInput("longitude")}>经度</InputItem>
+      <InputItem className={renderClassName("latitude")} onChange={handleInputChange("latitude")} onBlur={handleLeaveInput("latitude")}>纬度</InputItem>
+      <DatePicker mode="date" onChange={handleSelectChange("start")}>
+        <List.Item arrow="horizontal" className={renderClassName("start")}>日期</List.Item>
+      </DatePicker>
+      <InputItem className={renderClassName("amount")} onChange={handleInputChange("amount")} onBlur={handleLeaveInput("amount")}></InputItem>
+      <InputItem className={renderClassName("active")} onChange={handleInputChange("active")} onBlur={handleLeaveInput("active")}>立刻生效</InputItem>
     </List>
   </div>;
 }
