@@ -164,3 +164,37 @@ export default function () {
   );
 }
 ```
+
+## Hooks
+
+### useModel
+
+This hook is for model binding.
+
+```javascript
+const initialvalues = { age: 8 };
+const [model, setModel] = useModel(iniitialvalues);
+
+// set a field
+setModel('age', 15);
+// model => {age:  15}
+setModel({ gender: 'femal' });
+// model => {age: 15, gender: 'femal'}
+```
+
+### useValidation
+
+This hook is for validation.
+
+```javascript
+const schema = yup.object({ name: string().max(5, '名字不要写太长') });
+const model = { name: 'abcdefghijk' };
+const [validate, errors] = useValidation(schema);
+
+validate(model).then(console.error);
+// console
+// ValidationErrors{
+//  errors: ['名字不要写太长']
+//  ...
+// }
+```
