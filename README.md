@@ -8,9 +8,7 @@ This is the JSON data mocker script.
 
 ```javascript
 export default {
-  //编号
-  expandProjectNo: 'TM20391929',
-  // 门店地址
+  // 地址
   // @max 30
   shopLocation: '厦门市湖里区',
   // 经度
@@ -20,24 +18,15 @@ export default {
   // @min 0, XXX, yyy, true, 3
   // @max 19999,不能太大
   preLatitude: 25.03949,
-  // 开业时间
+  // 开始时间
   // @date
-  // @required 请填写开业日期
+  // @required 请填写预开始时间
   // @max 2099/12/31,不能太晚
-  // @nullable false
+  // @nullable false, 说点啥
   preOpeningTime: 1586854463211,
-  // 支持堂食
-  // @required 请选择是否支持堂食
-  isSupportCanteen: 1,
-  // 座位数
-  // @number
-  // @required 请填写座位数
-  // @min 1, 请填写正确的座位数
-  //
-  seatsNumber: 20,
   // 立刻生效
   // @bool
-  // @required 请输入是否立刻生效
+  // @required 请选择是否立刻生效
   active: true,
 };
 ```
