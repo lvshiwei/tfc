@@ -54,11 +54,7 @@ export class YupSchemaRuleDescriptor {
     }
   }
 
-  isRequired() {
-    if (!isNullOrUndefined(this._isRequired)) {
-      return this._isRequired;
-    }
-
+  get isRequired() {
     return this.hasAttribute(YUP_KEYWORD_REQUIRED);
   }
 
@@ -70,7 +66,7 @@ export class YupSchemaRuleDescriptor {
   }
 }
 
-export class YupSchemaRuleAttributeDescriptor {
+export class YupSchemaRuleDescriptorAttribute {
   constructor(key, values = []) {
     this.key = key;
     this.values = values;

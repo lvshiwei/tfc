@@ -12,9 +12,7 @@ import { List, InputItem, Picker, DatePicker } from "antd-mobile";
  */
 
 export default function () {
-  const [model, setModel] = useModel({
-    preOpeningTime: new Date()
-  });
+  const [model, setModel] = useModel({});
   const [validate, errors] = useValidation(schema);
 
   const handleSubmit = () => validate(model).then(() => alert("Amazing!!")).catch(console.error);
@@ -41,10 +39,10 @@ export default function () {
       <InputItem className={renderClassName("longitude")} onChange={handleInputChange("longitude")} onBlur={handleLeaveInput("longitude")}>经度</InputItem>
       <InputItem className={renderClassName("latitude")} onChange={handleInputChange("latitude")} onBlur={handleLeaveInput("latitude")}>纬度</InputItem>
       <DatePicker mode="date" onChange={handleSelectChange("start")}>
-        <List.Item arrow="horizontal" className={renderClassName("start")}>日期</List.Item>
+        <List.Item arrow="horizontal" className={renderClassName("start")}>日期<Required /></List.Item>
       </DatePicker>
       <InputItem className={renderClassName("amount")} onChange={handleInputChange("amount")} onBlur={handleLeaveInput("amount")}></InputItem>
-      <InputItem className={renderClassName("active")} onChange={handleInputChange("active")} onBlur={handleLeaveInput("active")}>立刻生效</InputItem>
+      <InputItem className={renderClassName("active")} onChange={handleInputChange("active")} onBlur={handleLeaveInput("active")}>立刻生效<Required /></InputItem>
     </List>
   </div>;
 }

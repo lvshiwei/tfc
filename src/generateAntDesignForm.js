@@ -25,7 +25,7 @@ import { List, InputItem, Picker, DatePicker } from "antd-mobile";
  * Say something to avoid warnning from eslint
  */
 export default function () {
-  const [model, setModel] = useModel({ preOpeningTime: new Date() });
+  const [model, setModel] = useModel({});
   const [validate, errors] = useValidation(schema);
 
   const handleSubmit = () =>
@@ -142,6 +142,7 @@ function makeDatePicker(ruleDescriptor) {
         t.jsxClosingElement(item),
         makeLabelAndRequired(ruleDescriptor),
       ),
+
       NEWLINE,
     ],
   );

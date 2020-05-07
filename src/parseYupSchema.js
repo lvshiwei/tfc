@@ -4,7 +4,7 @@ import * as t from '@babel/types';
 import {
   YupSchemaDescription,
   YupSchemaRuleDescriptor,
-  YupSchemaRuleAttributeDescriptor,
+  YupSchemaRuleDescriptorAttribute,
 } from './YupSchemaDescription';
 
 /**
@@ -62,7 +62,7 @@ function makeRuleDescriptor(value, attributes) {
     const { callee } = value;
 
     attributes.push(
-      new YupSchemaRuleAttributeDescriptor(
+      new YupSchemaRuleDescriptorAttribute(
         t.isMemberExpression(callee) ? callee.property.name : callee.name,
         makeValues(value.arguments),
       ),
