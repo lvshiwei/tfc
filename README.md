@@ -163,6 +163,8 @@ export default function () {
 }
 ```
 
+Now you get a <code>form.jsx</code> and <code>schema.js</code> and React Hooks named <code>useModel</code> and <code>useValidation</code> just try to submit and enjoy it.
+
 ## Hooks
 
 ### useModel
