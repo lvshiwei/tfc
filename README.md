@@ -2,7 +2,7 @@
 
 tfc is an awesome tool for building a form with model binding and validation, it generates codes for continuous development, and just start a few lines of code like JSON object.
 
-Project building progress 80%, we are going to provide a complete version and examples very soon, thank you.
+- Project building progress 80%, we are going to provide a complete version and examples very soon, thank you.
 
 ## example
 
@@ -40,7 +40,7 @@ export default {
 
 That is not a real JSON because JSON dose not support leading comment, and leading comments are powerfull and easy to use, Please take a look at annotations what leading comments start with prefix <code>@</code>, if you know about [Yup](https://github.com/jquense/yup), it may be good to understand. annotations will transform to rules on field. leading comments without prefix <code>@</code> will transform to a label text of form fileds.
 
-## How to use
+## Get start
 
 ```shell
 $ npm install -g
@@ -185,14 +185,23 @@ setModel({ gender: 'femal' });
 This hook is for validation.
 
 ```javascript
-const schema = yup.object({ name: string().max(5, '名字不要写太长') });
-const model = { name: '亲爱的特里斯坦帕帕森' };
+const schema = yup.object({
+  name: string().max(5, '名字不要写太长'),
+  age: number().min(18, '年纪不合法'),
+});
+const model = { name: '亲爱的特里斯坦帕帕森', age: 9 };
 const [validate, errors] = useValidation(schema);
 
 validate(model).catch(console.error);
 // console
 // ValidationErrors{
-//  errors: ['名字不要写太长']
+//  errors: ['名字不要写太长', '年纪不合法']
 //  ...
+// }
+
+validate('age', 13).catch(console.error);
+// console
+// ValidationErrors{
+//   errors: ['年纪不合法']
 // }
 ```
