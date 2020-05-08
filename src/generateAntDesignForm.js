@@ -60,18 +60,19 @@ export default function (description) {
   const divElement = returnStatement.argument;
 
   divElement.children.push(NEWLINE);
-  const fields = t.jsxElement(
+  const fieldset = t.jsxElement(
     t.jsxOpeningElement(t.jsxIdentifier('List'), []),
     t.jsxClosingElement(t.jsxIdentifier('List')),
     [NEWLINE],
   );
 
   for (const rule of description.rules) {
-    fields.children.push(makeField(rule));
-    fields.children.push(NEWLINE);
+    fieldset.children.push(makeField(rule));
+    fieldset.children.push(NEWLINE);
   }
-  divElement.children.push(fields);
+  divElement.children.push(fieldset);
   divElement.children.push(NEWLINE);
+  divElement.children.push(makeSubmitButton());
   const output = generate(ast, {}, CODE_TEMPLATE);
 
   return output.code;
@@ -187,4 +188,18 @@ function makeLabelAndRequired(ruleDescriptor) {
     children.push(makeRequiredElement());
   }
   return children;
+}
+
+function makeSubmitButton() {
+  const button = t.jsxIdentifier('Button');
+  return t.jsxElement(
+    t.jsxOpeningElement(button, [
+      t.jsxAttribute(
+        t.jsxIdentifier('onClick'),
+        t.jsxExpressionContainer(t.identifier('handleSubmit')),
+      ),
+    ]),
+    t.jsxClosingElement(button),
+    [t.jsxText('submit')],
+  );
 }

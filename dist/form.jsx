@@ -44,5 +44,5 @@ export default function () {
       <InputItem className={renderClassName("amount")} onChange={handleInputChange("amount")} onBlur={handleLeaveInput("amount")}></InputItem>
       <InputItem className={renderClassName("active")} onChange={handleInputChange("active")} onBlur={handleLeaveInput("active")}>立刻生效<Required /></InputItem>
     </List>
-  </div>;
+    <Button onClick={handleSubmit}>submit</Button></div>;
 }

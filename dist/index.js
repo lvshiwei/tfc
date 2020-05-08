@@ -765,7 +765,7 @@ function generateAntDesignForm (description) {
   var returnStatement = exportDefault.declaration.body.body.find(t.isReturnStatement);
   var divElement = returnStatement.argument;
   divElement.children.push(NEWLINE);
-  var fields = t.jsxElement(t.jsxOpeningElement(t.jsxIdentifier('List'), []), t.jsxClosingElement(t.jsxIdentifier('List')), [NEWLINE]);
+  var fieldset = t.jsxElement(t.jsxOpeningElement(t.jsxIdentifier('List'), []), t.jsxClosingElement(t.jsxIdentifier('List')), [NEWLINE]);
 
   var _iterator = _createForOfIteratorHelper(description.rules),
       _step;
@@ -773,8 +773,8 @@ function generateAntDesignForm (description) {
   try {
     for (_iterator.s(); !(_step = _iterator.n()).done;) {
       var rule = _step.value;
-      fields.children.push(makeField(rule));
-      fields.children.push(NEWLINE);
+      fieldset.children.push(makeField(rule));
+      fieldset.children.push(NEWLINE);
     }
   } catch (err) {
     _iterator.e(err);
@@ -782,8 +782,9 @@ function generateAntDesignForm (description) {
     _iterator.f();
   }
 
-  divElement.children.push(fields);
+  divElement.children.push(fieldset);
   divElement.children.push(NEWLINE);
+  divElement.children.push(makeSubmitButton());
   var output = generate(ast, {}, CODE_TEMPLATE$1);
   return output.code;
 }
@@ -837,6 +838,11 @@ function makeLabelAndRequired(ruleDescriptor) {
   }
 
   return children;
+}
+
+function makeSubmitButton() {
+  var button = t.jsxIdentifier('Button');
+  return t.jsxElement(t.jsxOpeningElement(button, [t.jsxAttribute(t.jsxIdentifier('onClick'), t.jsxExpressionContainer(t.identifier('handleSubmit')))]), t.jsxClosingElement(button), [t.jsxText('submit')]);
 }
 
 function jsonMock2YupSchema(filename) {

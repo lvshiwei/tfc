@@ -160,6 +160,7 @@ export default function () {
           <Required />
         </InputItem>
       </List>
+      <Button onClick={handleSubmit}>submit</Button>
     </div>
   );
 }
@@ -178,6 +179,7 @@ const [model, setModel] = useModel(iniitialvalues);
 // set a field
 setModel('age', 15);
 // model => {age:  15}
+
 setModel({ gender: 'femal' });
 // model => {age: 15, gender: 'femal'}
 ```
@@ -191,7 +193,7 @@ const schema = yup.object({ name: string().max(5, '名字不要写太长') });
 const model = { name: 'abcdefghijk' };
 const [validate, errors] = useValidation(schema);
 
-validate(model).then(console.error);
+validate(model).catch(console.error);
 // console
 // ValidationErrors{
 //  errors: ['名字不要写太长']
