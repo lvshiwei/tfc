@@ -44,12 +44,13 @@ That is not a real JSON because JSON dose not support leading comment, and leadi
 
 ```shell
 $ npm install -g
+
 $ tfc -s jsonMock.js
 ```
 
-## what did you get
+## What will you get
 
-### First, a validation schema depends on Yup
+### First, a validation schema, depends on [Yup](https://github.com/jquense/yup)
 
 ```javascript
 /**
@@ -74,7 +75,7 @@ export default object({
 });
 ```
 
-### Second, real H5 form code depends on [Ant-Design Mobile](https://mobile.ant.design/docs/react/introduce-cn) components library.
+### Second, a real H5 form code file, depends on [Ant-Design Mobile](https://mobile.ant.design/docs/react/introduce-cn) components library.
 
 ```jsx
 /**
@@ -89,7 +90,6 @@ import { List, InputItem, Picker, DatePicker, Button } from 'antd-mobile';
 /**
  * Say something to avoid warnning from eslint
  */
-
 export default function () {
   const [model, setModel] = useModel({});
   const [validate, errors] = useValidation(schema);
@@ -100,14 +100,11 @@ export default function () {
       .catch(console.error);
 
   const handleChangeInput = (name) => (value) => setModel(name, value);
-
   const handleLeaveInput = (name) => () => validate(name, model[name]);
-
   const handleChangeSelect = (name) => (value) => {
     setModel(name, value);
     validate(name, value);
   };
-
   const renderClassName = (name, properties) =>
     classnames(...(properties || []), {
       error: Array.isArray(errors) && errors.some((e) => e.path === name),
@@ -173,8 +170,7 @@ export default function () {
 This hook is for model binding.
 
 ```javascript
-const initialvalues = { age: 8 };
-const [model, setModel] = useModel(iniitialvalues);
+const [model, setModel] = useModel({ age: 8 });
 
 // set a field
 setModel('age', 15);
@@ -190,7 +186,7 @@ This hook is for validation.
 
 ```javascript
 const schema = yup.object({ name: string().max(5, '名字不要写太长') });
-const model = { name: 'abcdefghijk' };
+const model = { name: '亲爱的特里斯坦帕帕森' };
 const [validate, errors] = useValidation(schema);
 
 validate(model).catch(console.error);
