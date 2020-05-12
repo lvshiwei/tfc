@@ -161,7 +161,7 @@ var isNull = function isNull(v) {
   return v === null;
 };
 var isUndefined = function isUndefined(v) {
-  return typeof v === "undefined";
+  return typeof v === 'undefined';
 };
 var isNullOrUndefined = function isNullOrUndefined(v) {
   return isNull(v) || isUndefined(v);
@@ -170,10 +170,10 @@ var isNotEmptyArray = function isNotEmptyArray(v) {
   return Array.isArray(v) && v.length > 0;
 };
 var isNotEmptyString = function isNotEmptyString(v) {
-  return typeof v === "string" && v.length > 0;
+  return typeof v === 'string' && v.length > 0;
 };
 var isFunction = function isFunction(v) {
-  return typeof v === "function";
+  return typeof v === 'function';
 };
 
 var _YUP_TYPE_CASTORS;
