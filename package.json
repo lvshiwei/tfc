@@ -8,11 +8,13 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "bin": {
-    "tfc": "./dist/index.js"
+    "tfc": "./bin/index.js"
   },
   "keywords": [
     "form",
-    "build"
+    "generate",
+    "build",
+    "react"
   ],
   "author": "lvshiwei",
   "license": "ISC",
@@ -21,6 +23,8 @@
     "@babel/traverse": "^7.9.5",
     "@babel/types": "^7.9.5",
     "babylon": "^6.18.0",
+    "commander": "^5.1.0",
+    "fooky": "^1.1.0",
     "gulp": "^4.0.2"
   },
   "devDependencies": {

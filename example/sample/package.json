@@ -12,12 +12,8 @@
     "react-scripts": "3.4.1"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject",
-    "wp": "webpack",
-    "dev": "webpack-dev-server --open"
+    "b": "webpack",
+    "d": "webpack-dev-server --open"
   },
   "eslintConfig": {
     "extends": "react-app"

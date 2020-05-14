@@ -18,7 +18,7 @@ const CODE_TEMPLATE = `
 import React from "react";
 import classnames from "classnames";
 import schema from "./schema";
-import { useModel, useValidation } from "./hooks";
+import { useModel, useValidation } from "fooky";
 import { List, InputItem, Picker, DatePicker } from "antd-mobile";
 
 /**
@@ -26,7 +26,7 @@ import { List, InputItem, Picker, DatePicker } from "antd-mobile";
  */
 export default function () {
   const [model, setModel] = useModel({});
-  const [validate, errors] = useValidation(schema);
+  const {validate, hasError} = useValidation(schema);
 
   const handleSubmit = () =>
     validate(model)
@@ -41,7 +41,7 @@ export default function () {
   };
   const renderClassName = (name, properties) =>
     classnames(...(properties || []), {
-      error: Array.isArray(errors) && errors.some((e) => e.path === name),
+      error: hasError(name),
       hasValue: !(model[name] === null || typeof model[name] === "undefined"),
     });
 

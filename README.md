@@ -45,7 +45,7 @@ That is not a real JSON because JSON dose not support leading comment, and leadi
 ```shell
 $ npm install -g
 
-$ tfc -s jsonMock.js
+$ tfc -j jsonMock.js
 ```
 
 ## What will you get
