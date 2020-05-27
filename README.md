@@ -1,6 +1,6 @@
 # What is tfc
 
-tfc is an awesome tool for building a form with model binding and validation, it generates codes for continuous development, and just start a few lines of code like JSON object.
+tfc is an awesome tool for building a form with model binding and validation, technology based on AST theory. it generates codes for continuous development, start with a few lines of code like JSON object.
 
 - Project building progress 80%, we are going to provide a complete version and examples very soon, thank you.
 
@@ -53,6 +53,8 @@ $ tfc -j jsonMock.js
 ### First, a validation schema, depends on [Yup](https://github.com/jquense/yup)
 
 ```javascript
+// schema.js
+
 export default object({
   location: string().label('地址').max(30),
   longitude: number().label('经度'),
@@ -73,6 +75,8 @@ export default object({
 ### Second, a real H5 form code file, depends on [Ant-Design Mobile](https://mobile.ant.design/docs/react/introduce-cn) components library.
 
 ```jsx
+// form.jsx
+
 <div className="form-wrapper">
   <List>
     <InputItem

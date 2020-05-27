@@ -24,7 +24,7 @@
     "@babel/types": "^7.9.5",
     "babylon": "^6.18.0",
     "commander": "^5.1.0",
-    "fooky": "^1.1.0",
+    "fooky": "^1.2.4",
     "gulp": "^4.0.2"
   },
   "devDependencies": {

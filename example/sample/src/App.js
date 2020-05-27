@@ -1,12 +1,12 @@
 import React from 'react';
+import Form from './form';
 import './App.css';
-import { Button } from 'antd-mobile';
 import 'antd-mobile/dist/antd-mobile.min.css';
 
 function App() {
   return (
     <div className="App">
-      <Button type="primary">ABC</Button>
+      <Form />
     </div>
   );
 }
