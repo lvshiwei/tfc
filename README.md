@@ -2,7 +2,7 @@
 
 tfc is an awesome tool for building a form with model binding and validation, technology based on AST theory. it generates codes for continuous development, start with a few lines of code like JSON object.
 
-- Project building progress 80%, we are going to provide a complete version and examples very soon, thank you.
+- Project building progress 90%, we are going to provide a complete version and examples very soon, thank you.
 
 ## example
 
